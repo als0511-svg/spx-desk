@@ -202,17 +202,17 @@
       <div><label>Account $</label><input id="account" type="number" value="50000" /></div>
       <div><label>Risk % of account</label><input id="riskPct" type="number" step="0.1" value="0.5" /></div>
     </div>
-    <p class="hint">Risk % is the whole debit. One loser can be 100% of that debit. 0.25–0.50% is the sane band.</p>
+    <p class="hint">Risk % sizes the debit. Stop is −50% of that debit. 0.25–0.50% of account is the sane band.</p>
     <div class="watch" style="position:static;margin-top:10px">
       <div class="box" style="background:#1E3A5F">
-        <div class="lbl">TP1 — sell half</div>
+        <div class="lbl">TARGET — sell all</div>
         <div class="px" id="tp1Px">—</div>
-        <div class="why" id="tp1Why">+100% on the debit</div>
+        <div class="why" id="tp1Why">+100% · 2× debit</div>
       </div>
       <div class="box" style="background:#3B2A55">
-        <div class="lbl">TP2 — sell rest</div>
+        <div class="lbl">STOP — sell all</div>
         <div class="px" id="tp2Px">—</div>
-        <div class="why" id="tp2Why">+150% on the debit</div>
+        <div class="why" id="tp2Why">−50% · half the debit</div>
       </div>
     </div>
   </section>
@@ -226,7 +226,56 @@
     <h2>Naked plan</h2>
     <div id="plan" class="plan">Waiting on inputs.</div>
     <button class="wide ghost" type="button" onclick="copyPlan()">Copy plan</button>
-    <button class="wide" type="button" onclick="savePlan()">Save this morning</button>
+    <button class="wide" type="button" onclick="savePlan()">Save this morning snapshot</button>
+  </section>
+
+  <section>
+    <h2>Daily results</h2>
+    <p class="hint" style="margin-top:0">Log after the close. Stays on this phone (GitHub Pages). Use it to see skip vs trade, not to rewrite rules after one day.</p>
+    <div class="row">
+      <div>
+        <label>Date</label>
+        <input id="resDate" type="date">
+      </div>
+      <div>
+        <label>Action taken</label>
+        <select id="resAct">
+          <option value="WAIT">WAIT — no trade</option>
+          <option value="CALL">Bought CALL</option>
+          <option value="PUT">Bought PUT</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>OR high</label>
+        <input id="resOrH" inputmode="decimal" placeholder="from red box">
+      </div>
+      <div>
+        <label>OR low</label>
+        <input id="resOrL" inputmode="decimal" placeholder="from green box">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Outcome</label>
+        <select id="resOut">
+          <option value="none">No trade</option>
+          <option value="tp1">Hit +100% target</option>
+          <option value="stop">Hit −50% stop</option>
+          <option value="expire">Expired / time stop</option>
+          <option value="scratch">Scratch / even</option>
+        </select>
+      </div>
+      <div>
+        <label>P&amp;L $ (optional)</label>
+        <input id="resPnl" inputmode="decimal" placeholder="e.g. -800 or 400">
+      </div>
+    </div>
+    <label>Note</label>
+    <input id="resNote" placeholder="e.g. held 12 min below 7647 after 8:30 — skipped">
+    <button class="wide" type="button" onclick="saveDay()">Save today's result</button>
+    <div id="resStats" class="plan" style="margin-top:10px"></div>
     <div id="logs"></div>
   </section>
 
@@ -509,15 +558,12 @@ function render() {
   const maxRisk = acct * (rp / 100);
   const per = debit * 100;
   const qty = per > 0 ? Math.max(0, Math.floor(maxRisk / per)) : 0;
-  const stopPx = +(debit * 0.45).toFixed(2);
+  const stopPx = +(debit * 0.50).toFixed(2);
   const t1Px = +(debit * 2.00).toFixed(2);
-  const t2Px = +(debit * 2.50).toFixed(2);
-  const half = Math.max(1, Math.floor(qty / 2));
-  const rest = Math.max(0, qty - half);
   $("tp1Px").textContent = debit ? ("$" + t1Px) : "—";
-  $("tp2Px").textContent = debit ? ("$" + t2Px) : "—";
-  $("tp1Why").textContent = "+100% · sell " + (qty ? half : "half") + " of the contracts";
-  $("tp2Why").textContent = "+150% · sell " + (qty ? rest : "the rest");
+  $("tp2Px").textContent = debit ? ("$" + stopPx) : "—";
+  $("tp1Why").textContent = "+100% · sell all " + (qty || "") + " contracts";
+  $("tp2Why").textContent = "−50% · sell all if mark ≤ $" + stopPx;
 
   let plan = "";
   if (bias === "NONE" || grade === "NO TRADE" || grade.startsWith("MARG")) {
@@ -531,12 +577,11 @@ function render() {
       const t1 = magnet && magnet > s ? magnet : (vtrig || s + 20);
       const t2 = Math.min(cwall || s + 60, s + 50);
       plan = `<b>BUY 0DTE SPX ${k} CALL</b> · target ~${delta.toFixed(2)} delta · est debit $${debit.toFixed(2)} ($${per.toFixed(0)} each)<br>
-      <b>Contracts:</b> ${qty} at ${rp}% of $${acct.toLocaleString()} — that is the entire loss if it expires worthless.<br>
+      <b>Contracts:</b> ${qty} at ${rp}% of $${acct.toLocaleString()}. Max planned loss is 50% of debit if the stop is honored.<br>
       <b>Enter:</b> 10:15–11:30 ET only, after a 10-minute hold above OR high ${orH ?? "—"}. Limit at mid. No chase.<br>
       <b>Underlying stop:</b> SPX back through ${stopLvl} (OR low). Flatten immediately.<br>
-      <b>Premium stop:</b> offer out if mark ≤ $${stopPx} (≈45% of debit left).<br>
-      <b>TP1:</b> option mark ≥ $${t1Px} (+100%) — sell ${half} contract(s). Leave a GTC/limit sell when filled.<br>
-      <b>TP2:</b> option mark ≥ $${t2Px} (+150%) — sell remaining ${rest}. Underlying guide ${Math.round(t2)}.<br>
+      <b>Premium stop:</b> sell ALL if mark ≤ $${stopPx} (−50%).<br>
+      <b>Target:</b> sell ALL if mark ≥ $${t1Px} (+100%). No runner.<br>
       <b>Time stop:</b> 2:45–3:00 ET no matter what. Last-hour gamma is how naked longs donate the win back.<br>
       <b>Never:</b> roll, add, or turn it into a short if it fails.`;
     } else {
@@ -545,12 +590,11 @@ function render() {
       const t1 = magnet && magnet < s ? magnet : (flip || s - 20);
       const t2 = Math.max(pwall || s - 60, s - 50);
       plan = `<b>BUY 0DTE SPX ${k} PUT</b> · target ~${delta.toFixed(2)} delta · est debit $${debit.toFixed(2)} ($${per.toFixed(0)} each)<br>
-      <b>Contracts:</b> ${qty} at ${rp}% of $${acct.toLocaleString()} — full debit is max loss.<br>
+      <b>Contracts:</b> ${qty} at ${rp}% of $${acct.toLocaleString()}. Max planned loss is 50% of debit if the stop is honored.<br>
       <b>Enter:</b> 10:15–11:30 ET only, after a 10-minute hold below OR low ${orL ?? "—"}. Limit at mid.<br>
       <b>Underlying stop:</b> SPX reclaims ${stopLvl} (OR high).<br>
-      <b>Premium stop:</b> mark ≤ $${stopPx}.<br>
-      <b>TP1:</b> option mark ≥ $${t1Px} (+100%) — sell ${half} contract(s).<br>
-      <b>TP2:</b> option mark ≥ $${t2Px} (+150%) — sell remaining ${rest}. Underlying guide ${Math.round(t2)}.<br>
+      <b>Premium stop:</b> sell ALL if mark ≤ $${stopPx} (−50%).<br>
+      <b>Target:</b> sell ALL if mark ≥ $${t1Px} (+100%). No runner.<br>
       <b>Time stop:</b> 2:45–3:00 ET. Do not hold into the cash print hoping for extra.<br>
       <b>Never:</b> average a loser or flip to a short call.`;
     }
@@ -562,8 +606,6 @@ function render() {
 function ticket(side) {
   const debit = num("debit") || 0;
   const qty = Math.max(1, Math.floor(((num("account")||0) * (num("riskPct")||0) / 100) / Math.max(debit * 100, 1)));
-  const half = qty >= 2 ? Math.floor(qty / 2) : qty;
-  const rest = Math.max(0, qty - half);
   const s = num("spot") || 7674;
   const d = parseFloat($("delta").value);
   const pts = otmPts(d);
@@ -571,9 +613,8 @@ function ticket(side) {
   return [
     "EXECUTE " + side,
     "Buy " + qty + " SPX 0DTE " + k + " " + side + " @ ~$" + debit.toFixed(2),
-    "TP1 sell " + half + " @ $" + (debit * 2.00).toFixed(2) + " (+100%)",
-    "TP2 sell " + rest + " @ $" + (debit * 2.50).toFixed(2) + " (+150%)",
-    "Stop: option ~$" + (debit * 0.45).toFixed(2) + " or lose the OR",
+    "TARGET sell ALL @ $" + (debit * 2.00).toFixed(2) + " (+100%)",
+    "STOP sell ALL @ $" + (debit * 0.50).toFixed(2) + " (−50%) or if SPX loses the OR",
     "Flatten 2:45–3:00 ET if still open",
     "This app does not send the order to your broker. Paste into thinkorswim / Schwab."
   ].join("\n");
@@ -591,19 +632,63 @@ function copyPlan() {
   navigator.clipboard.writeText(t).then(()=>alert("Copied")).catch(()=>alert(t));
 }
 function savePlan() {
-  const logs = JSON.parse(localStorage.getItem("spxnaked") || "[]");
-  logs.unshift({ t: Date.now(), text: $("verdict").innerText + "\n" + $("plan").innerText });
-  localStorage.setItem("spxnaked", JSON.stringify(logs.slice(0, 40)));
+  const days = loadDays();
+  days.unshift({
+    t: Date.now(),
+    date: new Date().toLocaleDateString(),
+    kind: "snapshot",
+    text: $("verdict").innerText + "\n" + $("plan").innerText
+  });
+  localStorage.setItem("spxnaked", JSON.stringify(days.slice(0, 80)));
+  showLogs();
+}
+function loadDays() {
+  return JSON.parse(localStorage.getItem("spxnaked") || "[]");
+}
+function saveDay() {
+  const rec = {
+    t: Date.now(),
+    kind: "result",
+    date: $("resDate").value || new Date().toISOString().slice(0,10),
+    act: $("resAct").value,
+    orH: $("resOrH").value || $("orH").value,
+    orL: $("resOrL").value || $("orL").value,
+    out: $("resOut").value,
+    pnl: $("resPnl").value,
+    note: $("resNote").value
+  };
+  const days = loadDays().filter(d => !(d.kind === "result" && d.date === rec.date));
+  days.unshift(rec);
+  localStorage.setItem("spxnaked", JSON.stringify(days.slice(0, 80)));
+  $("resNote").value = "";
+  $("resPnl").value = "";
   showLogs();
 }
 function showLogs() {
-  const logs = JSON.parse(localStorage.getItem("spxnaked") || "[]");
-  $("logs").innerHTML = logs.map(l => `<div class="log"><pre>${new Date(l.t).toLocaleString()}\n${l.text}</pre></div>`).join("");
+  const days = loadDays();
+  const res = days.filter(d => d.kind === "result");
+  const trades = res.filter(d => d.act !== "WAIT");
+  const waits = res.filter(d => d.act === "WAIT").length;
+  const wins = trades.filter(d => d.out === "tp1" || d.out === "tp2").length;
+  const pnl = res.reduce((s,d) => s + (parseFloat(d.pnl) || 0), 0);
+  $("resStats").innerHTML = res.length
+    ? `<b>${res.length} days logged</b> · WAIT ${waits} · trades ${trades.length} · TP hits ${wins} · P&amp;L $${pnl.toFixed(0)}`
+    : "No results yet. Log Wednesday as WAIT if you stayed flat.";
+  $("logs").innerHTML = days.map(l => {
+    if (l.kind === "result") {
+      return `<div class="log"><pre>${l.date} · ${l.act} · ${l.out}
+OR ${l.orH || "—"} / ${l.orL || "—"} · P&L ${l.pnl || "—"}
+${l.note || ""}</pre></div>`;
+    }
+    return `<div class="log"><pre>${l.date || new Date(l.t).toLocaleString()}
+${l.text || ""}</pre></div>`;
+  }).join("");
 }
 
 ["spot","prior","flip","vtrig","cwall","pwall","magnet","vix","regime","book","event","orH","orL","above","below","whip","held10","delta","debit","account","riskPct"]
   .forEach(id => { $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
 useWedPreset();
+try { $("resDate").value = new Date().toISOString().slice(0,10); } catch(e) {}
 showLogs();
 </script>
 </body>
