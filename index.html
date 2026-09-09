@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#1A1020" />
+  <title>SPX Naked 0DTE Desk</title>
+  <style>
+    :root {
+      --bg:#1A1020; --card:#2A1830; --line:#4A2C4E; --ink:#F6EAF2; --muted:#C4A4B8;
+      --accent:#38BDF8; --gold:#F5C15C; --put:#34D399; --call:#FB7185; --skip:#F87171;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin:0; background:var(--bg); color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    body { max-width:560px; margin:0 auto; padding:12px 12px 48px; }
+    .watch { position:sticky; top:0; z-index:20; display:flex; gap:8px; margin-bottom:10px; }
+    .watch .box { flex:1; border-radius:16px; padding:12px 10px; text-align:center; }
+    .watch .box.call { background:#7F1D1D; }
+    .watch .box.put { background:#064E3B; }
+    .watch .lbl { font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.85; }
+    .watch .px { font-size:28px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.15; margin:4px 0; }
+    .watch .why { font-size:11px; opacity:.9; line-height:1.3; }
+    h1 { font-size:18px; margin:0; }
+    .top { background:linear-gradient(160deg,#3B1D3A,#1A1020); border:1px solid var(--line);
+      border-radius:16px; padding:16px; margin-bottom:10px; }
+    .top p { margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.45; }
+    section { background:var(--card); border:1px solid var(--line); border-radius:16px;
+      padding:14px; margin-bottom:10px; }
+    h2 { margin:0 0 10px; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); }
+    label { display:block; font-size:12px; color:var(--muted); margin:8px 0 4px; font-weight:600; }
+    input, select { width:100%; font-size:16px; padding:10px 12px; border-radius:10px;
+      border:1px solid var(--line); background:#1A1020; color:var(--ink); }
+    .row { display:flex; gap:8px; } .row > * { flex:1; }
+    button { border:0; border-radius:12px; padding:12px; font-weight:700; font-size:15px;
+      background:var(--accent); color:#2A1020; cursor:pointer; }
+    button.ghost { background:#4A2C4E; color:var(--ink); }
+    button.wide { width:100%; margin-top:8px; }
+    .btns { display:flex; gap:8px; }
+    .verdict { border-radius:16px; padding:16px; text-align:center; margin-bottom:10px; border:1px solid var(--line); }
+    .verdict .big { font-size:26px; font-weight:800; letter-spacing:.04em; }
+    .verdict .sub { margin-top:6px; font-size:13px; color:var(--muted); line-height:1.45; }
+    .plan { background:#1A1020; border-radius:12px; padding:12px; margin-top:8px; font-size:14px; line-height:1.5; }
+    .plan b { color:var(--gold); }
+    .tag { display:inline-block; padding:3px 8px; border-radius:999px; font-size:11px; font-weight:700; margin-right:4px; }
+    .ok { background:#064E3B; color:#A7F3D0; } .bad { background:#7F1D1D; color:#FECACA; }
+    .mid { background:#3B2A55; color:#E9D5FF; }
+    .hint { font-size:12px; color:var(--muted); line-height:1.4; margin-top:8px; }
+    .toggle { display:flex; justify-content:space-between; align-items:center; padding:8px 0;
+      border-bottom:1px solid var(--line); font-size:14px; }
+    .toggle:last-child { border-bottom:0; }
+    .switch { width:46px; height:28px; position:relative; flex-shrink:0; }
+    .switch input { opacity:0; width:0; height:0; }
+    .slider { position:absolute; inset:0; background:#4A2C4E; border-radius:999px; }
+    .slider:before { content:""; position:absolute; width:22px; height:22px; left:3px; top:3px;
+      background:#fff; border-radius:50%; transition:.15s; }
+    .switch input:checked + .slider { background:var(--accent); }
+    .switch input:checked + .slider:before { transform:translateX(18px); }
+    pre { white-space:pre-wrap; font-size:12px; margin:0; }
+    .log { border:1px solid var(--line); border-radius:10px; padding:10px; margin-top:8px; }
+    .warn { background:#3F1D1D; border:1px solid #7F1D1D; color:#FECACA; border-radius:12px;
+      padding:10px 12px; font-size:13px; line-height:1.4; margin-bottom:10px; }
+    .refresh-wrap { margin: 0 0 10px; }
+    .refresh-btn {
+      width:100%; padding:20px 12px; font-size:18px; font-weight:800; letter-spacing:.03em;
+      border-radius:18px; background:#38BDF8; color:#0B1B2B; border:0;
+      box-shadow:0 8px 24px rgba(56,189,248,.35);
+    }
+    .refresh-btn:disabled { opacity:.6; }
+    .refresh-meta { text-align:center; font-size:12px; color:var(--muted); margin-top:6px; }
+    .lock {
+      width:100%; border:0; border-radius:20px; padding:28px 12px; margin:0 0 10px;
+      font-size:32px; font-weight:900; letter-spacing:.06em; line-height:1.1;
+    }
+    .lock.wait { background:#FACC15; color:#1A1020; }
+    .lock.call { background:#E11D48; color:#fff; }
+    .lock.put { background:#059669; color:#fff; }
+    .lock .tiny { display:block; margin-top:8px; font-size:14px; font-weight:700; letter-spacing:0; opacity:.9; }
+    .exec { display:none; gap:8px; margin:0 0 10px; }
+    .exec.show { display:flex; }
+    .exec button { flex:1; padding:22px 8px; font-size:18px; border-radius:16px; }
+    .exec .go-call { background:#E11D48; color:#fff; }
+    .exec .go-put { background:#059669; color:#fff; }
+    .steps { margin:0; padding-left:22px; font-size:14px; line-height:1.55; }
+    .steps li { margin:0 0 8px; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <h1>SPX Naked 0DTE Desk</h1>
+    <p>Long call or long put only. Short naked SPX is a different product and is not in this app. A 0DTE long can go to $0 the same afternoon — treat the debit as the whole bet.</p>
+  </div>
+
+  <div class="watch">
+    <div class="box call">
+      <div class="lbl">Calls — watch above</div>
+      <div class="px" id="callPx">—</div>
+      <div class="why" id="callWhy">Need OR high after 10:00</div>
+    </div>
+    <div class="box put">
+      <div class="lbl">Puts — watch below</div>
+      <div class="px" id="putPx">—</div>
+      <div class="why" id="putWhy">Need OR low after 10:00</div>
+    </div>
+  </div>
+  <div class="refresh-wrap">
+    <button type="button" class="refresh-btn" id="autoBtn" onclick="autoRefresh()">MANUAL REFRESH</button>
+    <div class="refresh-meta" id="autoMeta">Pulls GEX + SPX + ES + VIX. After 10:00 ET also fills OR high/low from 1-minute bars.</div>
+  </div>
+  <button type="button" class="lock wait" id="lockBtn">WAIT<span class="tiny" id="lockWhy">Conditions not met. Do not place an order.</span></button>
+  <div class="exec" id="execRow">
+    <button type="button" class="go-call" id="execCall" onclick="executeSide('CALL')">BUY CALL (SPX)</button>
+    <button type="button" class="go-put" id="execPut" onclick="executeSide('PUT')">BUY PUT (SPX)</button>
+  </div>
+
+  <section>
+    <h2>Playbook — when to click buy</h2>
+    <ol class="steps">
+      <li><b>6:10 AM PDT</b> — Manual Refresh. No order. Draw the two watch numbers.</li>
+      <li><b>6:30–7:00</b> — Let the 9:30–10:00 ET range print. Still WAIT.</li>
+      <li><b>7:00–8:30 AM PDT</b> — Manual Refresh. OR high = call line. OR low = put line. Last look 8:30. After 8:30, no new trade.</li>
+      <li><b>PLACE CALL</b> only if price holds <b>above OR high for 10 minutes</b> before 8:30 AM PDT, no whipsaw, not an event day, VIX under 24.</li>
+      <li><b>PLACE PUT</b> only if price holds <b>below OR low for 10 minutes</b> before 8:30 AM PDT, same filters.</li>
+      <li>If both sides of the range get tagged, or the hold fails — stay on <b>WAIT</b>. Flat is a position.</li>
+    </ol>
+  </section>
+
+  <div class="warn">This does not raise the win rate of lottery tickets. Default strike is ~0.25–0.30 delta (near the money), not 0.05 delta. Skip is still the most common output.</div>
+
+  <section>
+    <h2>GEX board</h2>
+    <div class="btns">
+      <button type="button" onclick="loadGex()">Load public GEX</button>
+      <button type="button" class="ghost" onclick="useWedPreset()">Wed 9/9 preset</button>
+    </div>
+    <p class="hint" id="gexStatus">Loads SquawkFlow latest.json when Safari can reach GitHub.</p>
+    <div class="row">
+      <div><label>Spot / ES proxy</label><input id="spot" type="number" value="7674" /></div>
+      <div><label>Regime</label>
+        <select id="regime">
+          <option value="positive">Positive GEX (mean-revert)</option>
+          <option value="negative">Negative GEX (trend)</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div><label>Gamma flip</label><input id="flip" type="number" value="7651" /></div>
+      <div><label>Vol trigger</label><input id="vtrig" type="number" value="7705" /></div>
+    </div>
+    <div class="row">
+      <div><label>Call wall</label><input id="cwall" type="number" value="7800" /></div>
+      <div><label>Put wall</label><input id="pwall" type="number" value="7500" /></div>
+    </div>
+    <div class="row">
+      <div><label>Magnet</label><input id="magnet" type="number" value="7700" /></div>
+      <div><label>VIX</label><input id="vix" type="number" value="15.7" /></div>
+    </div>
+    <label>0DTE book</label>
+    <select id="book">
+      <option value="short">Today’s expiry looks short gamma</option>
+      <option value="long">Today’s expiry looks long gamma</option>
+      <option value="unk">Unknown</option>
+    </select>
+  </section>
+
+  <section>
+    <h2>Open + confirmation</h2>
+    <div class="row">
+      <div><label>Prior close</label><input id="prior" type="number" value="7673.65" /></div>
+      <div><label>Event day</label>
+        <select id="event"><option value="n">No</option><option value="y">Yes — skip</option></select>
+      </div>
+    </div>
+    <div class="row">
+      <div><label>OR high</label><input id="orH" type="number" /></div>
+      <div><label>OR low</label><input id="orL" type="number" /></div>
+    </div>
+    <div class="toggle"><span>Accepted above OR after 10:15</span>
+      <label class="switch"><input id="above" type="checkbox" /><span class="slider"></span></label></div>
+    <div class="toggle"><span>Accepted below OR after 10:15</span>
+      <label class="switch"><input id="below" type="checkbox" /><span class="slider"></span></label></div>
+    <div class="toggle"><span>Whipsaw / both sides tagged</span>
+      <label class="switch"><input id="whip" type="checkbox" /><span class="slider"></span></label></div>
+    <div class="toggle"><span>Held 10 minutes outside OR</span>
+      <label class="switch"><input id="held10" type="checkbox" /><span class="slider"></span></label></div>
+  </section>
+
+  <section>
+    <h2>Contract</h2>
+    <div class="row">
+      <div><label>Target delta</label>
+        <select id="delta">
+          <option value="0.30">0.30 — near money (default)</option>
+          <option value="0.25">0.25</option>
+          <option value="0.20">0.20 — more room, more decay</option>
+          <option value="0.15">0.15 — usually skip this far</option>
+        </select>
+      </div>
+      <div><label>Est. debit $</label><input id="debit" type="number" step="0.05" value="8.00" /></div>
+    </div>
+    <div class="row">
+      <div><label>Account $</label><input id="account" type="number" value="50000" /></div>
+      <div><label>Risk % of account</label><input id="riskPct" type="number" step="0.1" value="0.5" /></div>
+    </div>
+    <p class="hint">Risk % is the whole debit. One loser can be 100% of that debit. 0.25–0.50% is the sane band.</p>
+    <div class="watch" style="position:static;margin-top:10px">
+      <div class="box" style="background:#1E3A5F">
+        <div class="lbl">TP1 — sell half</div>
+        <div class="px" id="tp1Px">—</div>
+        <div class="why" id="tp1Why">+100% on the debit</div>
+      </div>
+      <div class="box" style="background:#3B2A55">
+        <div class="lbl">TP2 — sell rest</div>
+        <div class="px" id="tp2Px">—</div>
+        <div class="why" id="tp2Why">+150% on the debit</div>
+      </div>
+    </div>
+  </section>
+
+  <div id="verdict" class="verdict">
+    <div class="big">WAIT</div>
+    <div class="sub">Need GEX + opening range.</div>
+  </div>
+
+  <section>
+    <h2>Naked plan</h2>
+    <div id="plan" class="plan">Waiting on inputs.</div>
+    <button class="wide ghost" type="button" onclick="copyPlan()">Copy plan</button>
+    <button class="wide" type="button" onclick="savePlan()">Save this morning</button>
+    <div id="logs"></div>
+  </section>
+
+  <p class="hint">Safari → Share → Add to Home Screen. Not financial advice. Short naked calls/puts are excluded on purpose.</p>
+
+<script>
+const $ = id => document.getElementById(id);
+const num = id => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : null; };
+const rnd5 = x => Math.round(x / 5) * 5;
+let lastChecked = "";
+let lastPxTag = "";
+function stamp() {
+  lastChecked = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return lastChecked;
+}
+
+async function fetchJson(url) {
+  const attempts = [
+    "https://spx-proxy.als-0511.workers.dev/?url=" + encodeURIComponent(url),
+    url,
+    "https://corsproxy.io/?" + encodeURIComponent(url),
+    "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
+  ];
+  let lastErr;
+  for (const u of attempts) {
+    try {
+      const ctl = new AbortController();
+      const to = setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch(u, { cache: "no-store", signal: ctl.signal });
+      clearTimeout(to);
+      if (!r.ok) throw new Error("http " + r.status);
+      return await r.json();
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("fetch failed");
+}
+
+async function yahooChart(symbol) {
+  const url = "https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(symbol) + "?interval=1m&range=1d&includePrePost=false";
+  const j = await fetchJson(url);
+  const res = j.chart.result[0];
+  const m = res.meta;
+  return {
+    last: m.regularMarketPrice ?? m.previousClose,
+    prev: m.chartPreviousClose ?? m.previousClose,
+    ts: res.timestamp || [],
+    high: (res.indicators.quote[0].high) || [],
+    low: (res.indicators.quote[0].low) || [],
+    close: (res.indicators.quote[0].close) || []
+  };
+}
+
+function etParts(unix) {
+  const s = new Date(unix * 1000).toLocaleString("en-US", { timeZone: "America/New_York", hour12: false, hour: "2-digit", minute: "2-digit" });
+  const [hh, mm] = s.split(":").map(Number);
+  return hh * 60 + mm;
+}
+
+function openingRange(chart) {
+  let hi = -Infinity, lo = Infinity, bars = 0;
+  for (let i = 0; i < chart.ts.length; i++) {
+    const mins = etParts(chart.ts[i]);
+    if (mins < 9 * 60 + 30 || mins >= 10 * 60) continue;
+    const h = chart.high[i], l = chart.low[i];
+    if (h == null || l == null) continue;
+    if (h > hi) hi = h;
+    if (l < lo) lo = l;
+    bars++;
+  }
+  if (bars < 5 || !isFinite(hi) || !isFinite(lo)) return null;
+  return { high: Math.round(hi * 100) / 100, low: Math.round(lo * 100) / 100, bars };
+}
+
+function etNowMinutes() {
+  const s = new Date().toLocaleString("en-US", { timeZone: "America/New_York", hour12: false, hour: "2-digit", minute: "2-digit" });
+  const [hh, mm] = s.split(":").map(Number);
+  return hh * 60 + mm;
+}
+
+async function loadGex() {
+  $("gexStatus").textContent = "Loading GEX…";
+  const ctl = new AbortController();
+  const to = setTimeout(() => ctl.abort(), 8000);
+  const gexUrl = "https://raw.githubusercontent.com/dhawalc/spx-gamma-levels/main/data/latest.json";
+  const r = await fetch("https://spx-proxy.als-0511.workers.dev/?url=" + encodeURIComponent(gexUrl), { cache: "no-store", signal: ctl.signal });
+  clearTimeout(to);
+  const j = await r.json();
+  $("flip").value = Math.round(j.zero_gamma_flip);
+  $("cwall").value = j.call_wall;
+  $("pwall").value = j.put_wall;
+  $("vtrig").value = Math.round(j.vol_trigger);
+  $("regime").value = (j.gamma_regime || "").toLowerCase().includes("neg") ? "negative" : "positive";
+  $("gexStatus").textContent = `GEX ${j.date} · ${(j.net_gex_dollars/1e9).toFixed(1)}B · ${j.gamma_regime}`;
+  return j;
+}
+
+async function autoRefresh() {
+  const btn = $("autoBtn");
+  btn.disabled = true;
+  let left = 8;
+  btn.textContent = "REFRESHING… " + left + "s";
+  const tick = setInterval(() => {
+    left -= 1;
+    if (left >= 0) btn.textContent = "REFRESHING… " + left + "s";
+  }, 1000);
+  const bits = [];
+  try {
+    try { await loadGex(); bits.push("GEX ok"); }
+    catch (e) { bits.push("GEX failed"); }
+
+    try {
+      const [spx, vix, es] = await Promise.all([
+        yahooChart("^GSPC"), yahooChart("^VIX"), yahooChart("ES=F")
+      ]);
+      if (spx.prev) $("prior").value = Math.round(spx.prev * 100) / 100;
+      if (vix.last) $("vix").value = Math.round(vix.last * 100) / 100;
+      const etm = etNowMinutes();
+      const cashOpen = etm >= 9 * 60 + 30 && etm < 16 * 60;
+      if (!cashOpen && es.last) {
+        $("spot").value = Math.round(es.last);
+        lastPxTag = "ES " + Math.round(es.last);
+      } else if (spx.last) {
+        $("spot").value = Math.round(spx.last * 100) / 100;
+        lastPxTag = "SPX " + Math.round(spx.last);
+      } else if (es.last) {
+        lastPxTag = "ES " + Math.round(es.last);
+      }
+
+      if (etm < 10 * 60) {
+        bits.push("OR not ready until 10:00 ET");
+      } else {
+        const or = openingRange(spx) || openingRange(es);
+        if (or) {
+          $("orH").value = or.high;
+          $("orL").value = or.low;
+          const px = num("spot");
+          if (px != null) {
+            $("above").checked = px > or.high;
+            $("below").checked = px < or.low;
+            $("whip").checked = false;
+          }
+          bits.push("OR " + or.high + " / " + or.low + " (" + or.bars + " bars)");
+        } else {
+          bits.push("OR bars missing — type high/low");
+        }
+      }
+      bits.push("Yahoo ok");
+    } catch (e) { bits.push("Yahoo blocked — type spot/VIX/OR"); }
+
+    stamp();
+    render();
+    $("autoMeta").textContent = lastChecked + " · " + bits.join(" · ");
+  } finally {
+    clearInterval(tick);
+    btn.disabled = false;
+    btn.textContent = lastPxTag ? ("MANUAL REFRESH (" + lastPxTag + ")") : "MANUAL REFRESH";
+  }
+}
+
+function useWedPreset() {
+  $("spot").value = 7674; $("prior").value = 7673.65;
+  $("flip").value = 7651; $("vtrig").value = 7705;
+  $("cwall").value = 7800; $("pwall").value = 7500;
+  $("magnet").value = 7700; $("vix").value = 15.7;
+  $("regime").value = "positive"; $("book").value = "short";
+  $("gexStatus").textContent = "Wed 9/9 preset loaded.";
+  render();
+}
+
+function otmPts(delta) {
+  if (delta >= 0.28) return 15;
+  if (delta >= 0.23) return 25;
+  if (delta >= 0.18) return 40;
+  return 55;
+}
+
+function render() {
+  const spot = num("spot"), prior = num("prior"), flip = num("flip"), vtrig = num("vtrig");
+  const cwall = num("cwall"), pwall = num("pwall"), magnet = num("magnet"), vix = num("vix");
+  const orH = num("orH"), orL = num("orL");
+  const debit = num("debit") || 0, acct = num("account") || 0, rp = num("riskPct") || 0;
+  const delta = parseFloat($("delta").value);
+  const regime = $("regime").value, book = $("book").value;
+  const event = $("event").value === "y";
+  const above = $("above").checked, below = $("below").checked, whip = $("whip").checked;
+  const held10 = $("held10").checked;
+
+  // Clear watch levels: OR is the trigger once known. Until then use prior high/low proxies.
+  let callLvl = orH, putLvl = orL, callWhy = "", putWhy = "";
+  if (orH != null) { callWhy = "OR high. Hold 10 min above, then buy call."; }
+  else { callLvl = magnet && spot && magnet > spot ? magnet : (vtrig || 7700); callWhy = "Premarket proxy (magnet/vol trigger). Replace with OR high at 10:00."; }
+  if (orL != null) { putWhy = "OR low. Hold 10 min below, then buy put."; }
+  else { putLvl = flip || 7651; putWhy = "Premarket proxy (gamma flip). Replace with OR low at 10:00."; }
+  $("callPx").textContent = callLvl != null ? Math.round(callLvl) : "—";
+  $("putPx").textContent = putLvl != null ? Math.round(putLvl) : "—";
+  $("callWhy").textContent = callWhy;
+  $("putWhy").textContent = putWhy;
+
+  const gap = (spot && prior) ? ((spot - prior) / prior) * 100 : null;
+  const orW = (orH != null && orL != null && orH > orL) ? orH - orL : null;
+  const orPct = (orW && spot) ? (orW / spot) * 100 : null;
+
+  const skip = [];
+  if (event) skip.push("event day");
+  if (gap != null && Math.abs(gap) >= 0.80) skip.push("gap ≥ 0.80%");
+  if (whip) skip.push("whipsaw");
+  if (orPct != null && orPct < 0.15) skip.push("OR too tight");
+  if (vix != null && vix >= 24) skip.push("VIX ≥ 24 — premium is rich and unstable");
+  if (above && below) skip.push("both sides marked");
+
+  let bias = "NONE", conf = 0;
+  const notes = [];
+  if (regime === "positive") notes.push("+GEX: magnet/fade days. Naked longs die in chop — need a real OR hold.");
+  else notes.push("−GEX: trend days. Naked longs need follow-through or they decay.");
+  if (book === "short") { notes.push("Short 0DTE book: moves can extend. Still flatten into 3:00."); conf += 1; }
+  if (book === "long") { notes.push("Long 0DTE book: pin risk. Don’t hold a winner into the close hoping for more."); conf -= 1; }
+  if (spot && magnet && Math.abs(spot - magnet) <= 12) notes.push("On the magnet. Naked direction is a coin flip until OR breaks.");
+
+  if (!skip.length && above && !below && held10) { bias = "CALL"; conf += regime === "negative" ? 3 : 2; }
+  else if (!skip.length && below && !above && held10) { bias = "PUT"; conf += regime === "negative" ? 3 : 2; }
+  if (skip.length) { bias = "NONE"; conf = 0; }
+
+  const lock = $("lockBtn");
+  const why = $("lockWhy");
+  const execRow = $("execRow");
+  $("execCall").style.display = "none";
+  $("execPut").style.display = "none";
+  execRow.classList.remove("show");
+
+  if (bias === "CALL") {
+    lock.className = "lock call";
+    lock.childNodes[0].textContent = "PLACE CALL" + (lastChecked ? " (last checked " + lastChecked + ")" : "");
+    why.textContent = "Held 10 min above OR high " + orH + ". Buy Call is unlocked.";
+    execRow.classList.add("show");
+    $("execCall").style.display = "block";
+    {
+      const s = spot || callLvl || 0;
+      const k = rnd5(s + otmPts(delta));
+      $("execCall").textContent = "BUY CALL " + k + " (SPX " + Math.round(s) + ")";
+    }
+  } else if (bias === "PUT") {
+    lock.className = "lock put";
+    lock.childNodes[0].textContent = "PLACE PUT" + (lastChecked ? " (last checked " + lastChecked + ")" : "");
+    why.textContent = "Held 10 min below OR low " + orL + ". Buy Put is unlocked.";
+    execRow.classList.add("show");
+    $("execPut").style.display = "block";
+    {
+      const s = spot || putLvl || 0;
+      const k = rnd5(s - otmPts(delta));
+      $("execPut").textContent = "BUY PUT " + k + " (SPX " + Math.round(s) + ")";
+    }
+  } else {
+    lock.className = "lock wait";
+    lock.childNodes[0].textContent = "WAIT" + (lastChecked ? " (last checked " + lastChecked + ")" : "");
+    let reason = "Do not place an order.";
+    if (event) reason = "Event day. WAIT.";
+    else if (whip) reason = "Whipsaw. WAIT.";
+    else if (orH == null) reason = "No opening range yet. WAIT.";
+    else if (!held10) reason = "Need a 10-minute hold outside the range. WAIT.";
+    else if (above && below) reason = "Both sides tagged. WAIT.";
+    else reason = (skip[0] ? skip[0] + ". " : "") + "WAIT.";
+    why.textContent = reason;
+  }
+
+  let grade = "WAIT";
+  if (skip.length || (orH != null && bias === "NONE")) grade = "NO TRADE";
+  else if (orH == null) grade = "PREMARKET";
+  else if (conf >= 4) grade = "TAKE CALL/PUT";
+  else if (conf >= 2) grade = "SMALL ONLY";
+  else if (bias !== "NONE") grade = "MARGINAL — prefer skip";
+
+  const color = grade.startsWith("NO") || grade.startsWith("MARG") ? "var(--skip)"
+    : bias === "CALL" ? "var(--call)" : bias === "PUT" ? "var(--put)" : "var(--gold)";
+
+  $("verdict").innerHTML = `<div class="big" style="color:${color}">${grade}</div>
+    <div class="sub"><span class="tag ${bias==="CALL"?"bad":bias==="PUT"?"ok":"mid"}">${bias === "NONE" ? "FLAT" : "LONG "+bias}</span>
+    ${skip.length ? skip.join(" · ") : (orPct!=null ? "OR "+orPct.toFixed(2)+"%" : "OR not in")}
+    ${gap!=null ? " · gap "+gap.toFixed(2)+"%" : ""}</div>`;
+
+  const maxRisk = acct * (rp / 100);
+  const per = debit * 100;
+  const qty = per > 0 ? Math.max(0, Math.floor(maxRisk / per)) : 0;
+  const stopPx = +(debit * 0.45).toFixed(2);
+  const t1Px = +(debit * 2.00).toFixed(2);
+  const t2Px = +(debit * 2.50).toFixed(2);
+  const half = Math.max(1, Math.floor(qty / 2));
+  const rest = Math.max(0, qty - half);
+  $("tp1Px").textContent = debit ? ("$" + t1Px) : "—";
+  $("tp2Px").textContent = debit ? ("$" + t2Px) : "—";
+  $("tp1Why").textContent = "+100% · sell " + (qty ? half : "half") + " of the contracts";
+  $("tp2Why").textContent = "+150% · sell " + (qty ? rest : "the rest");
+
+  let plan = "";
+  if (bias === "NONE" || grade === "NO TRADE" || grade.startsWith("MARG")) {
+    plan = "<b>No naked option.</b> Sitting out is the high-probability action. " + notes.join(" ");
+  } else {
+    const s = spot || 7674;
+    const pts = otmPts(delta);
+    if (bias === "CALL") {
+      const k = rnd5(s + pts);
+      const stopLvl = orL != null ? orL - 2 : s - 16;
+      const t1 = magnet && magnet > s ? magnet : (vtrig || s + 20);
+      const t2 = Math.min(cwall || s + 60, s + 50);
+      plan = `<b>BUY 0DTE SPX ${k} CALL</b> · target ~${delta.toFixed(2)} delta · est debit $${debit.toFixed(2)} ($${per.toFixed(0)} each)<br>
+      <b>Contracts:</b> ${qty} at ${rp}% of $${acct.toLocaleString()} — that is the entire loss if it expires worthless.<br>
+      <b>Enter:</b> 10:15–11:30 ET only, after a 10-minute hold above OR high ${orH ?? "—"}. Limit at mid. No chase.<br>
+      <b>Underlying stop:</b> SPX back through ${stopLvl} (OR low). Flatten immediately.<br>
+      <b>Premium stop:</b> offer out if mark ≤ $${stopPx} (≈45% of debit left).<br>
+      <b>TP1:</b> option mark ≥ $${t1Px} (+100%) — sell ${half} contract(s). Leave a GTC/limit sell when filled.<br>
+      <b>TP2:</b> option mark ≥ $${t2Px} (+150%) — sell remaining ${rest}. Underlying guide ${Math.round(t2)}.<br>
+      <b>Time stop:</b> 2:45–3:00 ET no matter what. Last-hour gamma is how naked longs donate the win back.<br>
+      <b>Never:</b> roll, add, or turn it into a short if it fails.`;
+    } else {
+      const k = rnd5(s - pts);
+      const stopLvl = orH != null ? orH + 2 : s + 16;
+      const t1 = magnet && magnet < s ? magnet : (flip || s - 20);
+      const t2 = Math.max(pwall || s - 60, s - 50);
+      plan = `<b>BUY 0DTE SPX ${k} PUT</b> · target ~${delta.toFixed(2)} delta · est debit $${debit.toFixed(2)} ($${per.toFixed(0)} each)<br>
+      <b>Contracts:</b> ${qty} at ${rp}% of $${acct.toLocaleString()} — full debit is max loss.<br>
+      <b>Enter:</b> 10:15–11:30 ET only, after a 10-minute hold below OR low ${orL ?? "—"}. Limit at mid.<br>
+      <b>Underlying stop:</b> SPX reclaims ${stopLvl} (OR high).<br>
+      <b>Premium stop:</b> mark ≤ $${stopPx}.<br>
+      <b>TP1:</b> option mark ≥ $${t1Px} (+100%) — sell ${half} contract(s).<br>
+      <b>TP2:</b> option mark ≥ $${t2Px} (+150%) — sell remaining ${rest}. Underlying guide ${Math.round(t2)}.<br>
+      <b>Time stop:</b> 2:45–3:00 ET. Do not hold into the cash print hoping for extra.<br>
+      <b>Never:</b> average a loser or flip to a short call.`;
+    }
+    plan += "<br><br>" + notes.map(x => "• " + x).join("<br>");
+  }
+  $("plan").innerHTML = plan;
+}
+
+function ticket(side) {
+  const debit = num("debit") || 0;
+  const qty = Math.max(1, Math.floor(((num("account")||0) * (num("riskPct")||0) / 100) / Math.max(debit * 100, 1)));
+  const half = qty >= 2 ? Math.floor(qty / 2) : qty;
+  const rest = Math.max(0, qty - half);
+  const s = num("spot") || 7674;
+  const d = parseFloat($("delta").value);
+  const pts = otmPts(d);
+  const k = side === "CALL" ? rnd5(s + pts) : rnd5(s - pts);
+  return [
+    "EXECUTE " + side,
+    "Buy " + qty + " SPX 0DTE " + k + " " + side + " @ ~$" + debit.toFixed(2),
+    "TP1 sell " + half + " @ $" + (debit * 2.00).toFixed(2) + " (+100%)",
+    "TP2 sell " + rest + " @ $" + (debit * 2.50).toFixed(2) + " (+150%)",
+    "Stop: option ~$" + (debit * 0.45).toFixed(2) + " or lose the OR",
+    "Flatten 2:45–3:00 ET if still open",
+    "This app does not send the order to your broker. Paste into thinkorswim / Schwab."
+  ].join("\n");
+}
+
+function executeSide(side) {
+  const t = ticket(side);
+  navigator.clipboard.writeText(t).then(() => {
+    alert(t + "\n\nCopied. Place it in the broker yourself.");
+  }).catch(() => alert(t));
+}
+
+function copyPlan() {
+  const t = $("verdict").innerText + "\n\n" + $("plan").innerText;
+  navigator.clipboard.writeText(t).then(()=>alert("Copied")).catch(()=>alert(t));
+}
+function savePlan() {
+  const logs = JSON.parse(localStorage.getItem("spxnaked") || "[]");
+  logs.unshift({ t: Date.now(), text: $("verdict").innerText + "\n" + $("plan").innerText });
+  localStorage.setItem("spxnaked", JSON.stringify(logs.slice(0, 40)));
+  showLogs();
+}
+function showLogs() {
+  const logs = JSON.parse(localStorage.getItem("spxnaked") || "[]");
+  $("logs").innerHTML = logs.map(l => `<div class="log"><pre>${new Date(l.t).toLocaleString()}\n${l.text}</pre></div>`).join("");
+}
+
+["spot","prior","flip","vtrig","cwall","pwall","magnet","vix","regime","book","event","orH","orL","above","below","whip","held10","delta","debit","account","riskPct"]
+  .forEach(id => { $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
+useWedPreset();
+showLogs();
+</script>
+</body>
+</html>
