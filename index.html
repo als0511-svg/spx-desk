@@ -76,6 +76,8 @@
     .lock.wait { background:#FACC15; color:#1A1020; }
     .lock.call { background:#E11D48; color:#fff; }
     .lock.put { background:#059669; color:#fff; }
+    .lock.nocredit { background:#4A2C4E; color:#F6EAF2; }
+    .lock.credit { background:#0369A1; color:#fff; }
     .lock .tiny { display:block; margin-top:8px; font-size:14px; font-weight:700; letter-spacing:0; opacity:.9; }
     .exec { display:none; gap:8px; margin:0 0 10px; }
     .exec.show { display:flex; }
@@ -112,6 +114,7 @@
     <button type="button" class="go-call" id="execCall" onclick="executeSide('CALL')">BUY CALL (SPX)</button>
     <button type="button" class="go-put" id="execPut" onclick="executeSide('PUT')">BUY PUT (SPX)</button>
   </div>
+  <button type="button" class="lock nocredit" id="creditBtn" onclick="onCreditTap()">NO PREMIUM SELLING<span class="tiny" id="creditWhy">Conditions not met.</span></button>
 
   <section>
     <h2>Playbook — when to click buy</h2>
@@ -122,10 +125,11 @@
       <li><b>PLACE CALL</b> only if price holds <b>above OR high for 10 minutes</b> before 8:30 AM PDT, no whipsaw, not an event day, VIX under 24.</li>
       <li><b>PLACE PUT</b> only if price holds <b>below OR low for 10 minutes</b> before 8:30 AM PDT, same filters.</li>
       <li>If both sides of the range get tagged, or the hold fails — stay on <b>WAIT</b>. Flat is a position.</li>
+      <li><b>8:30 AM PDT credit (optional):</b> only if still <b>inside</b> the OR, no event, VIX under 24. Sell a <b>15-wide defined-risk</b> credit — never naked short. Take <b>75%</b> of the credit. Stop at <b>2× credit</b> or if price leaves the OR.</li>
     </ol>
   </section>
 
-  <div class="warn">This does not raise the win rate of lottery tickets. Default strike is ~0.25–0.30 delta (near the money), not 0.05 delta. Skip is still the most common output.</div>
+  <div class="warn">Long 0DTE is still the main book. Afternoon credit is only when the morning long did not trigger <b>and</b> price is still in the box. Naked short is never allowed.</div>
 
   <section>
     <h2>GEX board</h2>
@@ -230,6 +234,31 @@
   </section>
 
   <section>
+    <h2>8:30 credit — only if still inside OR</h2>
+    <p class="hint" style="margin-top:0">Not a long. Defined-risk vertical only. Short strike ~20 pts outside the box, long 15 further. Collect credit. Buy back at 25¢ on the dollar (that is 75% profit). Stop if the spread doubles or SPX leaves the OR.</p>
+    <div class="row">
+      <div><label>Credit collected $</label><input id="creditPx" type="number" step="0.05" value="0.80"></div>
+      <div><label>Width (pts)</label><input id="creditW" type="number" value="15"></div>
+    </div>
+    <div class="watch" style="position:static;margin-top:10px">
+      <div class="box" style="background:#1E3A5F">
+        <div class="lbl">BUY BACK (75%)</div>
+        <div class="px" id="crTp">—</div>
+        <div class="why" id="crTpWhy">25% of credit left</div>
+      </div>
+      <div class="box" style="background:#3B2A55">
+        <div class="lbl">STOP (2×)</div>
+        <div class="px" id="crSt">—</div>
+        <div class="why" id="crStWhy">spread worth 2× credit</div>
+      </div>
+    </div>
+    <div id="creditPlan" class="plan" style="margin-top:10px">Need OR high / OR low.</div>
+    <button class="wide" type="button" onclick="copyCredit('CONDOR')">Copy iron condor ticket</button>
+    <button class="wide ghost" type="button" onclick="copyCredit('CALL')">Copy call credit only</button>
+    <button class="wide ghost" type="button" onclick="copyCredit('PUT')">Copy put credit only</button>
+  </section>
+
+  <section>
     <h2>Daily results</h2>
     <p class="hint" style="margin-top:0">Log after the close. Stays on this phone (GitHub Pages). Use it to see skip vs trade, not to rewrite rules after one day.</p>
     <div class="row">
@@ -265,6 +294,8 @@
           <option value="stop">Hit −50% stop</option>
           <option value="expire">Expired / time stop</option>
           <option value="scratch">Scratch / even</option>
+          <option value="credit75">Credit hit 75% TP</option>
+          <option value="creditstop">Credit stopped 2×</option>
         </select>
       </div>
       <div>
@@ -540,6 +571,8 @@ function render() {
     why.textContent = reason;
   }
 
+  paintPremiumBtn(bias, skip, event, whip, vix, spot, orH, orL, regime);
+
   let grade = "WAIT";
   if (skip.length || (orH != null && bias === "NONE")) grade = "NO TRADE";
   else if (orH == null) grade = "PREMARKET";
@@ -601,6 +634,116 @@ function render() {
     plan += "<br><br>" + notes.map(x => "• " + x).join("<br>");
   }
   $("plan").innerHTML = plan;
+  paintCredit();
+}
+
+let creditReady = false;
+function paintPremiumBtn(bias, skip, event, whip, vix, spot, orH, orL, regime) {
+  const btn = $("creditBtn");
+  const why = $("creditWhy");
+  creditReady = false;
+  const etm = etNowMinutes();
+  const w = num("creditW") || 15;
+  const inside = orH != null && orL != null && spot != null && spot <= orH && spot >= orL;
+  const sc = orH != null ? rnd5(orH + 20) : null;
+  const lc = sc != null ? sc + w : null;
+  const sp = orL != null ? rnd5(orL - 20) : null;
+  const lp = sp != null ? sp - w : null;
+
+  if (bias === "CALL" || bias === "PUT") {
+    btn.className = "lock nocredit";
+    btn.childNodes[0].textContent = "NO PREMIUM SELLING";
+    why.textContent = "Long is unlocked. Do not sell premium.";
+    return;
+  }
+  if (event || (vix != null && vix >= 24) || whip || skip.includes("gap ≥ 0.80%")) {
+    btn.className = "lock nocredit";
+    btn.childNodes[0].textContent = "NO PREMIUM SELLING";
+    why.textContent = skip[0] || (event ? "Event day." : "Filters failed.");
+    return;
+  }
+  if (orH == null || orL == null) {
+    btn.className = "lock nocredit";
+    btn.childNodes[0].textContent = "NO PREMIUM SELLING";
+    why.textContent = "No opening range yet.";
+    return;
+  }
+  if (!inside) {
+    btn.className = "lock nocredit";
+    btn.childNodes[0].textContent = "NO PREMIUM SELLING";
+    why.textContent = "Price is outside the OR. Do not sell premium.";
+    return;
+  }
+  if (regime === "negative") {
+    btn.className = "lock nocredit";
+    btn.childNodes[0].textContent = "NO PREMIUM SELLING";
+    why.textContent = "−GEX trend day. Skip afternoon credit.";
+    return;
+  }
+  if (etm < 11 * 60 + 30) {
+    btn.className = "lock nocredit";
+    btn.childNodes[0].textContent = "NO PREMIUM SELLING";
+    why.textContent = "Clock before 8:30 AM PDT. Wait on credit.";
+    return;
+  }
+  creditReady = true;
+  btn.className = "lock credit";
+  btn.childNodes[0].textContent = "SELL PREMIUM  " + sc + "/" + lc + " C  +  " + sp + "/" + lp + " P";
+  why.textContent = "Still inside " + Math.round(orL) + "–" + Math.round(orH) + ". 15-wide credits. TP 75% · stop 2×.";
+}
+function onCreditTap() {
+  if (!creditReady) return;
+  copyCredit("CONDOR");
+}
+
+function paintCredit() {
+  const cr = num("creditPx") || 0;
+  const w = num("creditW") || 15;
+  const orH = num("orH"), orL = num("orL");
+  const tp = +(cr * 0.25).toFixed(2);
+  const st = +(cr * 2).toFixed(2);
+  $("crTp").textContent = cr ? ("$" + tp) : "—";
+  $("crSt").textContent = cr ? ("$" + st) : "—";
+  $("crTpWhy").textContent = "buy back · 75% of credit kept";
+  $("crStWhy").textContent = "stop if mark ≥ $" + st;
+  if (orH == null || orL == null) {
+    $("creditPlan").innerHTML = "Need today's OR high / OR low first.";
+    return;
+  }
+  const sc = rnd5(orH + 20);
+  const lc = sc + w;
+  const sp = rnd5(orL - 20);
+  const lp = sp - w;
+  const maxLoss = ((w * 100) - (cr * 100)).toFixed(0);
+  $("creditPlan").innerHTML =
+    `<b>Iron condor</b> only if SPX is still between ${orH} and ${orL} at 8:30 AM PDT.<br>
+    Sell ${sc}/${lc} call credit · Sell ${sp}/${lp} put credit · ${w} wide.<br>
+    Credit ~$${cr.toFixed(2)} → buy back at <b>$${tp}</b> (75%). Stop <b>$${st}</b> (2×) or if price leaves the OR.<br>
+    Max loss per side ≈ $${maxLoss} if you let it go to width. Flatten 2:45 ET.<br>
+    <b>Skip credit</b> on event days, VIX ≥ 24, −GEX trend days, or if the box was already broken.`;
+}
+
+function copyCredit(kind) {
+  const cr = num("creditPx") || 0;
+  const w = num("creditW") || 15;
+  const orH = num("orH"), orL = num("orL");
+  if (orH == null || orL == null) { alert("Type today's OR high and low first."); return; }
+  const sc = rnd5(orH + 20);
+  const lc = sc + w;
+  const sp = rnd5(orL - 20);
+  const lp = sp - w;
+  const tp = (cr * 0.25).toFixed(2);
+  const st = (cr * 2).toFixed(2);
+  let lines;
+  if (kind === "CALL") {
+    lines = ["SELL CALL CREDIT (bear call)", "Sell " + sc + " / buy " + lc + " 0DTE call", "Credit ~$" + cr.toFixed(2), "TP buy back @ $" + tp + " (75%)", "Stop @ $" + st + " (2×) or SPX through OR high " + orH];
+  } else if (kind === "PUT") {
+    lines = ["SELL PUT CREDIT (bull put)", "Sell " + sp + " / buy " + lp + " 0DTE put", "Credit ~$" + cr.toFixed(2), "TP buy back @ $" + tp + " (75%)", "Stop @ $" + st + " (2×) or SPX through OR low " + orL];
+  } else {
+    lines = ["SELL IRON CONDOR", "Call credit " + sc + "/" + lc, "Put credit " + sp + "/" + lp, "Credit ~$" + cr.toFixed(2) + " (one or both sides)", "TP buy back @ $" + tp + " (75%)", "Stop @ $" + st + " (2×) or leave the OR " + orL + "–" + orH, "No naked short. Flatten 2:45 ET."];
+  }
+  const t = lines.join("\n");
+  navigator.clipboard.writeText(t).then(() => alert(t + "\n\nCopied. Place in the broker yourself.")).catch(() => alert(t));
 }
 
 function ticket(side) {
@@ -685,7 +828,7 @@ ${l.text || ""}</pre></div>`;
   }).join("");
 }
 
-["spot","prior","flip","vtrig","cwall","pwall","magnet","vix","regime","book","event","orH","orL","above","below","whip","held10","delta","debit","account","riskPct"]
+["spot","prior","flip","vtrig","cwall","pwall","magnet","vix","regime","book","event","orH","orL","above","below","whip","held10","delta","debit","account","riskPct","creditPx","creditW"]
   .forEach(id => { $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
 render();
 try { $("resDate").value = new Date().toISOString().slice(0,10); } catch(e) {}
