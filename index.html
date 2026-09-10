@@ -73,12 +73,9 @@
       width:100%; border:0; border-radius:20px; padding:28px 12px; margin:0 0 10px;
       font-size:32px; font-weight:900; letter-spacing:.06em; line-height:1.1;
     }
-    .lock.wait { background:#FACC15; color:#1A1020; }
-    .lock.call { background:#E11D48; color:#fff; }
-    .lock.put { background:#059669; color:#fff; }
-    .lock.nocredit { background:#4A2C4E; color:#F6EAF2; }
-    .lock.credit { background:#0369A1; color:#fff; }
-    .lock .tiny { display:block; margin-top:8px; font-size:14px; font-weight:700; letter-spacing:0; opacity:.9; }
+    .lock.wait, .lock.nocredit { background:#4B5563; color:#D1D5DB; }
+    .lock.call, .lock.put, .lock.credit { background:#059669; color:#fff; }
+    .lock .tiny { display:block; margin-top:8px; font-size:14px; font-weight:700; letter-spacing:0; opacity:.9; white-space:pre-line; }
     .exec { display:none; gap:8px; margin:0 0 10px; }
     .exec.show { display:flex; }
     .exec button { flex:1; padding:22px 8px; font-size:18px; border-radius:16px; }
@@ -688,8 +685,8 @@ function paintPremiumBtn(bias, skip, event, whip, vix, spot, orH, orL, regime) {
   }
   creditReady = true;
   btn.className = "lock credit";
-  btn.childNodes[0].textContent = "SELL PREMIUM  " + sc + "/" + lc + " C  +  " + sp + "/" + lp + " P";
-  why.textContent = "Still inside " + Math.round(orL) + "–" + Math.round(orH) + ". 15-wide credits. TP 75% · stop 2×.";
+  btn.childNodes[0].textContent = "SELL PREMIUM";
+  why.textContent = "STO " + sc + " call\nBTO " + lc + " call\nSTO " + sp + " put\nBTO " + lp + " put";
 }
 function onCreditTap() {
   if (!creditReady) return;
@@ -736,11 +733,11 @@ function copyCredit(kind) {
   const st = (cr * 2).toFixed(2);
   let lines;
   if (kind === "CALL") {
-    lines = ["SELL CALL CREDIT (bear call)", "Sell " + sc + " / buy " + lc + " 0DTE call", "Credit ~$" + cr.toFixed(2), "TP buy back @ $" + tp + " (75%)", "Stop @ $" + st + " (2×) or SPX through OR high " + orH];
+    lines = ["STO " + sc + " call", "BTO " + lc + " call", "STC both when mark = $" + tp + " (75%)", "BTC both if mark = $" + st + " (2× stop)"];
   } else if (kind === "PUT") {
-    lines = ["SELL PUT CREDIT (bull put)", "Sell " + sp + " / buy " + lp + " 0DTE put", "Credit ~$" + cr.toFixed(2), "TP buy back @ $" + tp + " (75%)", "Stop @ $" + st + " (2×) or SPX through OR low " + orL];
+    lines = ["STO " + sp + " put", "BTO " + lp + " put", "STC both when mark = $" + tp + " (75%)", "BTC both if mark = $" + st + " (2× stop)"];
   } else {
-    lines = ["SELL IRON CONDOR", "Call credit " + sc + "/" + lc, "Put credit " + sp + "/" + lp, "Credit ~$" + cr.toFixed(2) + " (one or both sides)", "TP buy back @ $" + tp + " (75%)", "Stop @ $" + st + " (2×) or leave the OR " + orL + "–" + orH, "No naked short. Flatten 2:45 ET."];
+    lines = ["STO " + sc + " call", "BTO " + lc + " call", "STO " + sp + " put", "BTO " + lp + " put"];
   }
   const t = lines.join("\n");
   navigator.clipboard.writeText(t).then(() => alert(t + "\n\nCopied. Place in the broker yourself.")).catch(() => alert(t));
