@@ -131,7 +131,7 @@
     <h2>GEX board</h2>
     <div class="btns">
       <button type="button" onclick="loadGex()">Load public GEX</button>
-      <button type="button" class="ghost" onclick="useWedPreset()">Wed 9/9 preset</button>
+      <button type="button" class="ghost" onclick="useWedPreset()">Load last saved GEX</button>
     </div>
     <p class="hint" id="gexStatus">Loads SquawkFlow latest.json when Safari can reach GitHub.</p>
     <div class="row">
@@ -441,7 +441,7 @@ function useWedPreset() {
   $("cwall").value = 7800; $("pwall").value = 7500;
   $("magnet").value = 7700; $("vix").value = 15.7;
   $("regime").value = "positive"; $("book").value = "short";
-  $("gexStatus").textContent = "Wed 9/9 preset loaded.";
+  $("gexStatus").textContent = "Last saved GEX snapshot loaded (not live).";
   render();
 }
 
@@ -687,7 +687,7 @@ ${l.text || ""}</pre></div>`;
 
 ["spot","prior","flip","vtrig","cwall","pwall","magnet","vix","regime","book","event","orH","orL","above","below","whip","held10","delta","debit","account","riskPct"]
   .forEach(id => { $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
-useWedPreset();
+render();
 try { $("resDate").value = new Date().toISOString().slice(0,10); } catch(e) {}
 showLogs();
 </script>
