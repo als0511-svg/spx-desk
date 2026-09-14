@@ -82,6 +82,14 @@
     .exec .go-call, .exec .go-put { background:#059669; color:#fff; }
     .steps { margin:0; padding-left:22px; font-size:14px; line-height:1.55; }
     .steps li { margin:0 0 8px; }
+    .live3 { display:flex; gap:8px; margin:0 0 10px; }
+    .live3 .box { flex:1; border-radius:14px; padding:10px 8px; text-align:center; background:#241428; border:1px solid var(--line); }
+    .live3 .box.hi { border-color:#7F1D1D; }
+    .live3 .box.lo { border-color:#065F46; }
+    .live3 .box.wall { border-color:#1D4ED8; }
+    .live3 .lbl { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+    .live3 .px { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; margin:4px 0 0; }
+    .live3 .why { font-size:10px; color:var(--muted); margin-top:2px; line-height:1.3; }
   </style>
 </head>
 <body>
@@ -100,6 +108,23 @@
       <div class="lbl">Puts — watch below</div>
       <div class="px" id="putPx">—</div>
       <div class="why" id="putWhy">Need OR low after 10:00</div>
+    </div>
+  </div>
+  <div class="live3">
+    <div class="box hi">
+      <div class="lbl">Session high</div>
+      <div class="px" id="sessHi">—</div>
+      <div class="why" id="sessHiWhy">Resistance</div>
+    </div>
+    <div class="box lo">
+      <div class="lbl">Session low</div>
+      <div class="px" id="sessLo">—</div>
+      <div class="why" id="sessLoWhy">Support</div>
+    </div>
+    <div class="box wall">
+      <div class="lbl">Nearest GEX wall</div>
+      <div class="px" id="nearWall">—</div>
+      <div class="why" id="nearWallWhy">Call / put magnet</div>
     </div>
   </div>
   <div class="refresh-wrap">
@@ -362,6 +387,75 @@ function etParts(unix) {
   return hh * 60 + mm;
 }
 
+function sessionRange(chart) {
+  let hi = -Infinity, lo = Infinity, bars = 0;
+  for (let i = 0; i < chart.ts.length; i++) {
+    const mins = etParts(chart.ts[i]);
+    if (mins < 9 * 60 + 30 || mins >= 16 * 60) continue;
+    const h = chart.high[i], l = chart.low[i];
+    if (h == null || l == null) continue;
+    if (h > hi) hi = h;
+    if (l < lo) lo = l;
+    bars++;
+  }
+  if (bars < 1 || !isFinite(hi) || !isFinite(lo)) return null;
+  return { high: Math.round(hi * 100) / 100, low: Math.round(lo * 100) / 100, bars };
+}
+
+function nearestWall(spot, cwall, pwall, magnet) {
+  const cand = [];
+  if (cwall != null) cand.push({ n: cwall, k: "call wall" });
+  if (pwall != null) cand.push({ n: pwall, k: "put wall" });
+  if (magnet != null) cand.push({ n: magnet, k: "magnet" });
+  if (!cand.length) return null;
+  if (spot == null) return cand[0];
+  cand.sort((a, b) => Math.abs(a.n - spot) - Math.abs(b.n - spot));
+  return cand[0];
+}
+
+function persistLive() {
+  const keys = ["spot","prior","flip","vtrig","cwall","pwall","magnet","vix","regime","book","orH","orL"];
+  const o = {};
+  keys.forEach(k => { if ($(k)) o[k] = $(k).value; });
+  o.sessHi = $("sessHi") ? $("sessHi").textContent : "";
+  o.sessLo = $("sessLo") ? $("sessLo").textContent : "";
+  o.nearWall = $("nearWall") ? $("nearWall").textContent : "";
+  o.t = Date.now();
+  try { localStorage.setItem("spxnaked_live", JSON.stringify(o)); } catch (e) {}
+}
+
+function restoreLive() {
+  try {
+    const o = JSON.parse(localStorage.getItem("spxnaked_live") || "null");
+    if (!o || !o.t) return false;
+    if (Date.now() - o.t > 18 * 60 * 60 * 1000) return false;
+    ["spot","prior","flip","vtrig","cwall","pwall","magnet","vix","regime","book","orH","orL"].forEach(k => {
+      if (o[k] != null && $(k)) $(k).value = o[k];
+    });
+    return true;
+  } catch (e) { return false; }
+}
+
+function paintLive3(sess, spot) {
+  const cwall = num("cwall"), pwall = num("pwall"), magnet = num("magnet");
+  const hi = sess ? sess.high : null;
+  const lo = sess ? sess.low : null;
+  $("sessHi").textContent = hi != null ? Math.round(hi) : "—";
+  $("sessLo").textContent = lo != null ? Math.round(lo) : "—";
+  $("sessHiWhy").textContent = hi != null ? "Resistance until new high" : "Need RTH bars";
+  $("sessLoWhy").textContent = lo != null ? "Support until new low" : "Need RTH bars";
+  const w = nearestWall(spot, cwall, pwall, magnet);
+  if (w) {
+    $("nearWall").textContent = Math.round(w.n);
+    const side = spot != null && w.n >= spot ? "overhead" : "underneath";
+    $("nearWallWhy").textContent = w.k + " · " + side;
+    if (magnet == null && w.n) $("magnet").value = Math.round(w.n);
+  } else {
+    $("nearWall").textContent = "—";
+    $("nearWallWhy").textContent = "Load GEX first";
+  }
+}
+
 function openingRange(chart) {
   let hi = -Infinity, lo = Infinity, bars = 0;
   for (let i = 0; i < chart.ts.length; i++) {
@@ -432,6 +526,14 @@ async function autoRefresh() {
         lastPxTag = "ES " + Math.round(es.last);
       }
 
+      const sess = sessionRange(spx) || sessionRange(es);
+      if (sess) {
+        paintLive3(sess, num("spot"));
+        bits.push("H/L " + sess.high + " / " + sess.low);
+      } else {
+        paintLive3(null, num("spot"));
+      }
+
       if (etm < 10 * 60) {
         bits.push("OR not ready until 10:00 ET");
       } else {
@@ -447,14 +549,20 @@ async function autoRefresh() {
           }
           bits.push("OR " + or.high + " / " + or.low + " (" + or.bars + " bars)");
         } else {
-          bits.push("OR bars missing — type high/low");
+          bits.push("OR bars missing");
         }
+      }
+      const wall = nearestWall(num("spot"), num("cwall"), num("pwall"), num("magnet"));
+      if (wall) {
+        $("magnet").value = Math.round(wall.n);
+        bits.push("wall " + Math.round(wall.n));
       }
       bits.push("Yahoo ok");
     } catch (e) { bits.push("Yahoo blocked — type spot/VIX/OR"); }
 
     stamp();
     render();
+    persistLive();
     $("autoMeta").textContent = lastChecked + " · " + bits.join(" · ");
   } finally {
     clearInterval(tick);
@@ -501,6 +609,12 @@ function render() {
   $("putPx").textContent = putLvl != null ? Math.round(putLvl) : "—";
   $("callWhy").textContent = callWhy;
   $("putWhy").textContent = putWhy;
+  paintLive3(
+    (num("orH") != null || $("sessHi").textContent !== "—")
+      ? { high: parseFloat($("sessHi").textContent) || num("orH"), low: parseFloat($("sessLo").textContent) || num("orL") }
+      : null,
+    spot
+  );
 
   const gap = (spot && prior) ? ((spot - prior) / prior) * 100 : null;
   const orW = (orH != null && orL != null && orH > orL) ? orH - orL : null;
@@ -827,9 +941,11 @@ ${l.text || ""}</pre></div>`;
 
 ["spot","prior","flip","vtrig","cwall","pwall","magnet","vix","regime","book","event","orH","orL","above","below","whip","held10","delta","debit","account","riskPct","creditPx","creditW"]
   .forEach(id => { $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
+restoreLive();
 render();
 try { $("resDate").value = new Date().toISOString().slice(0,10); } catch(e) {}
 showLogs();
+setTimeout(() => { autoRefresh().catch(() => {}); }, 400);
 </script>
 </body>
 </html>
