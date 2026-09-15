@@ -101,7 +101,7 @@
   <section>
     <h2>Board</h2>
     <div class="kv"><span>Spot</span><span id="spotOut">—</span></div>
-    <div class="kv"><span>OR 9:30–10:00</span><span id="orOut">—</span></div>
+    <div class="kv"><span>OR 6:30–7:00 AM PT</span><span id="orOut">—</span></div>
     <div class="kv"><span>VIX</span><span id="vixOut">—</span></div>
     <div class="kv"><span>Gap %</span><span id="gapOut">—</span></div>
     <div class="kv" id="atmRow"><span>ATM strike</span><span id="atmOut">—</span></div>
@@ -171,18 +171,18 @@
     <h2>Playbook</h2>
     <div id="playNaked">
       <ol class="steps">
-        <li><b>7:00–8:30 AM PDT</b> — OR high = call line, OR low = put line.</li>
+        <li><b>7:00–8:30 AM PT</b> — OR high = call line, OR low = put line.</li>
         <li><b>PLACE CALL</b> only after 10-min hold above OR high. Exit all at <b>2× debit</b>. Stop at <b>0.5×</b>.</li>
         <li><b>PLACE PUT</b> only after 10-min hold below OR low. Same exits.</li>
-        <li>Skip event / VIX≥24 / gap≥0.80% / whipsaw. After 8:30 no new long.</li>
+        <li>Skip event / VIX≥24 / gap≥0.80% / whipsaw. After <b>8:30 AM PT</b> no new long. Flat <b>11:45 AM PT</b>.</li>
       </ol>
     </div>
     <div id="playStraddle" class="hidden">
       <ol class="steps">
-        <li><b>9:45 ET</b> — buy ATM call and ATM put (same strike).</li>
+        <li><b>6:45 AM PT</b> — buy ATM call and ATM put (same strike).</li>
         <li>Call costs <b>x</b>, put costs <b>y</b>. Pair debit = <b>x+y</b>.</li>
         <li>Exit both together at <b>1.5(x+y)</b>. Stop if combined ≤ <b>0.5(x+y)</b>.</li>
-        <li>Skip event / VIX≥24 / gap≥0.80% / before 9:45 ET / after 1:00 PM ET. Flat 2:45 ET.</li>
+        <li>Skip event / VIX≥24 / gap≥0.80% / before <b>6:45 AM PT</b> / after <b>10:00 AM PT</b>. Time stop <b>10:00 AM PT</b>.</li>
       </ol>
     </div>
   </section>
@@ -199,8 +199,8 @@ let mode = "naked";
 let ready = false;
 let lastTicket = "";
 
-function etNowMinutes() {
-  const s = new Date().toLocaleString("en-US", { timeZone: "America/New_York", hour12: false, hour: "2-digit", minute: "2-digit" });
+function ptNowMinutes() {
+  const s = new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", hour12: false, hour: "2-digit", minute: "2-digit" });
   const [hh, mm] = s.split(":").map(Number);
   return hh * 60 + mm;
 }
@@ -237,7 +237,7 @@ function paint() {
   const orL = num("orL");
   const event = $("event").value === "y";
   const gap = (spot != null && prior) ? ((spot - prior) / prior) * 100 : null;
-  const etm = etNowMinutes();
+  const ptm = ptNowMinutes();
   const acct = num("account") || 0;
   const rp = num("riskPct") || 0;
 
@@ -288,8 +288,8 @@ function paint() {
     $("stOut").textContent = pair ? ("$" + st) : "—";
 
     const skip = commonSkip.slice();
-    if (etm < 9 * 60 + 45) skip.push("before 9:45 ET");
-    if (etm >= 13 * 60) skip.push("after 1:00 PM ET");
+    if (ptm < 6 * 60 + 45) skip.push("before 6:45 AM PT");
+    if (ptm >= 10 * 60) skip.push("after 10:00 AM PT");
     if (spot == null) skip.push("no spot");
     if (!x || !y) skip.push("set x and y");
 
@@ -314,7 +314,7 @@ function paint() {
       "BTO " + qty + " SPX 0DTE " + atm + " PUT   (debit y ≈ $" + y.toFixed(2) + ")\n" +
       "Pair = x+y = $" + pair.toFixed(2) + "\n" +
       "STC both as one @ $" + tp + "  [1.5(x+y)]\n" +
-      "Stop both @ $" + st + "  [0.5(x+y)] · flat 2:45 ET";
+      "Stop both @ $" + st + "  [0.5(x+y)] · flat 10:00 AM PT";
     $("ticket").textContent = lastTicket;
     $("copyBtn").disabled = false;
     return;
@@ -335,8 +335,8 @@ function paint() {
   const skip = commonSkip.slice();
   if (whip || (above && below)) skip.push("whipsaw");
   if (orH == null || orL == null) skip.push("no OR yet");
-  // long window ends 11:30 ET = 8:30 PDT
-  const inWindow = etm >= 10 * 60 + 15 && etm < 11 * 60 + 30;
+  // long window 7:15–8:30 AM PT
+  const inWindow = ptm >= 7 * 60 + 15 && ptm < 8 * 60 + 30;
 
   let side = null;
   if (!skip.length && held10 && above && !below && inWindow) side = "CALL";
@@ -348,7 +348,7 @@ function paint() {
     let r = "No long.";
     if (skip[0]) r = skip[0];
     else if (!held10) r = "Need 10-min hold outside OR";
-    else if (!inWindow) r = "Outside 10:15–11:30 ET window";
+    else if (!inWindow) r = "Outside 7:15–8:30 AM PT window";
     else if (!above && !below) r = "No side accepted yet";
     why.textContent = r;
     $("ticket").textContent = "Gray = no ticket.";
@@ -368,7 +368,7 @@ function paint() {
     "BUY " + qty + " SPX 0DTE " + k + " " + side + " @ ~$" + debit.toFixed(2) + "\n" +
     "TARGET sell ALL @ $" + tp + " (+100%)\n" +
     "STOP sell ALL @ $" + st + " (−50%) or lose the OR\n" +
-    "Flatten 2:45 ET";
+    "Flatten 11:45 AM PT";
   $("ticket").textContent = lastTicket;
   $("copyBtn").disabled = false;
 }
