@@ -1,1094 +1,180 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#1A1020" />
-  <title>SPX Naked 0DTE Desk</title>
-  <style>
-    :root {
-      --bg:#1A1020; --card:#2A1830; --line:#4A2C4E; --ink:#F6EAF2; --muted:#C4A4B8;
-      --accent:#38BDF8; --gold:#F5C15C; --put:#34D399; --call:#FB7185; --skip:#F87171;
-    }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { margin:0; background:var(--bg); color:var(--ink);
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
-    body { max-width:560px; margin:0 auto; padding:12px 12px 48px; }
-    .watch { position:sticky; top:0; z-index:20; display:flex; gap:8px; margin-bottom:10px; }
-    .watch .box { flex:1; border-radius:16px; padding:12px 10px; text-align:center; }
-    .watch .box.call { background:#7F1D1D; }
-    .watch .box.put { background:#064E3B; }
-    .watch .lbl { font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.85; }
-    .watch .px { font-size:28px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.15; margin:4px 0; }
-    .watch .why { font-size:11px; opacity:.9; line-height:1.3; }
-    h1 { font-size:18px; margin:0; }
-    .top { background:linear-gradient(160deg,#3B1D3A,#1A1020); border:1px solid var(--line);
-      border-radius:16px; padding:16px; margin-bottom:10px; }
-    .top p { margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.45; }
-    section { background:var(--card); border:1px solid var(--line); border-radius:16px;
-      padding:14px; margin-bottom:10px; }
-    h2 { margin:0 0 10px; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); }
-    label { display:block; font-size:12px; color:var(--muted); margin:8px 0 4px; font-weight:600; }
-    input, select { width:100%; font-size:16px; padding:10px 12px; border-radius:10px;
-      border:1px solid var(--line); background:#1A1020; color:var(--ink); }
-    .row { display:flex; gap:8px; } .row > * { flex:1; }
-    button { border:0; border-radius:12px; padding:12px; font-weight:700; font-size:15px;
-      background:var(--accent); color:#2A1020; cursor:pointer; }
-    button.ghost { background:#4A2C4E; color:var(--ink); }
-    button.wide { width:100%; margin-top:8px; }
-    .btns { display:flex; gap:8px; }
-    .verdict { border-radius:16px; padding:16px; text-align:center; margin-bottom:10px; border:1px solid var(--line); }
-    .verdict .big { font-size:26px; font-weight:800; letter-spacing:.04em; }
-    .verdict .sub { margin-top:6px; font-size:13px; color:var(--muted); line-height:1.45; }
-    .plan { background:#1A1020; border-radius:12px; padding:12px; margin-top:8px; font-size:14px; line-height:1.5; }
-    .plan b { color:var(--gold); }
-    .tag { display:inline-block; padding:3px 8px; border-radius:999px; font-size:11px; font-weight:700; margin-right:4px; }
-    .ok { background:#064E3B; color:#A7F3D0; } .bad { background:#7F1D1D; color:#FECACA; }
-    .mid { background:#3B2A55; color:#E9D5FF; }
-    .hint { font-size:12px; color:var(--muted); line-height:1.4; margin-top:8px; }
-    .toggle { display:flex; justify-content:space-between; align-items:center; padding:8px 0;
-      border-bottom:1px solid var(--line); font-size:14px; }
-    .toggle:last-child { border-bottom:0; }
-    .switch { width:46px; height:28px; position:relative; flex-shrink:0; }
-    .switch input { opacity:0; width:0; height:0; }
-    .slider { position:absolute; inset:0; background:#4A2C4E; border-radius:999px; }
-    .slider:before { content:""; position:absolute; width:22px; height:22px; left:3px; top:3px;
-      background:#fff; border-radius:50%; transition:.15s; }
-    .switch input:checked + .slider { background:var(--accent); }
-    .switch input:checked + .slider:before { transform:translateX(18px); }
-    pre { white-space:pre-wrap; font-size:12px; margin:0; }
-    .log { border:1px solid var(--line); border-radius:10px; padding:10px; margin-top:8px; }
-    .warn { background:#3F1D1D; border:1px solid #7F1D1D; color:#FECACA; border-radius:12px;
-      padding:10px 12px; font-size:13px; line-height:1.4; margin-bottom:10px; }
-    .refresh-wrap { margin: 0 0 10px; }
-    .refresh-btn {
-      width:100%; padding:20px 12px; font-size:18px; font-weight:800; letter-spacing:.03em;
-      border-radius:18px; background:#38BDF8; color:#0B1B2B; border:0;
-      box-shadow:0 8px 24px rgba(56,189,248,.35);
-    }
-    .refresh-btn:disabled { opacity:.6; }
-    .refresh-meta { text-align:center; font-size:12px; color:var(--muted); margin-top:6px; }
-    .lock {
-      width:100%; border:0; border-radius:20px; padding:28px 12px; margin:0 0 10px;
-      font-size:32px; font-weight:900; letter-spacing:.06em; line-height:1.1;
-    }
-    .lock.wait, .lock.nocredit { background:#4B5563; color:#D1D5DB; }
-    .lock.call, .lock.put, .lock.credit { background:#059669; color:#fff; }
-    .lock .tiny { display:block; margin-top:8px; font-size:14px; font-weight:700; letter-spacing:0; opacity:.9; white-space:pre-line; }
-    .exec { display:none; gap:8px; margin:0 0 10px; }
-    .exec.show { display:flex; }
-    .exec button { flex:1; padding:22px 8px; font-size:18px; border-radius:16px; }
-    .exec .go-call, .exec .go-put { background:#059669; color:#fff; }
-    .steps { margin:0; padding-left:22px; font-size:14px; line-height:1.55; }
-    .steps li { margin:0 0 8px; }
-    .live3 { display:flex; gap:8px; margin:0 0 10px; }
-    .live3 .box { flex:1; border-radius:14px; padding:10px 8px; text-align:center; background:#241428; border:1px solid var(--line); }
-    .live3 .box.hi { border-color:#7F1D1D; }
-    .live3 .box.lo { border-color:#065F46; }
-    .live3 .box.wall { border-color:#1D4ED8; }
-    .live3 .lbl { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
-    .live3 .px { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; margin:4px 0 0; }
-    .live3 .why { font-size:10px; color:var(--muted); margin-top:2px; line-height:1.3; }
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2113.4">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
   </style>
 </head>
 <body>
-  <div class="top">
-    <h1>SPX Naked 0DTE Desk</h1>
-    <p>Longs only. Two books: OR-break (one side) or straddle (both sides after the first 15 minutes). Short naked SPX is never in this app. A 0DTE long can go to $0 the same afternoon — treat the debit as the whole bet.</p>
-  </div>
-
-  <div class="watch">
-    <div class="box call">
-      <div class="lbl">Calls — watch above</div>
-      <div class="px" id="callPx">—</div>
-      <div class="why" id="callWhy">Need OR high after 10:00</div>
-    </div>
-    <div class="box put">
-      <div class="lbl">Puts — watch below</div>
-      <div class="px" id="putPx">—</div>
-      <div class="why" id="putWhy">Need OR low after 10:00</div>
-    </div>
-  </div>
-  <div class="live3">
-    <div class="box hi">
-      <div class="lbl">Session high</div>
-      <div class="px" id="sessHi">—</div>
-      <div class="why" id="sessHiWhy">Resistance</div>
-    </div>
-    <div class="box lo">
-      <div class="lbl">Session low</div>
-      <div class="px" id="sessLo">—</div>
-      <div class="why" id="sessLoWhy">Support</div>
-    </div>
-    <div class="box wall">
-      <div class="lbl">Nearest GEX wall</div>
-      <div class="px" id="nearWall">—</div>
-      <div class="why" id="nearWallWhy">Call / put magnet</div>
-    </div>
-  </div>
-  <div class="refresh-wrap">
-    <button type="button" class="refresh-btn" id="autoBtn" onclick="autoRefresh()">MANUAL REFRESH</button>
-    <div class="refresh-meta" id="autoMeta">Pulls GEX + SPX + ES + VIX. After 10:00 ET also fills OR high/low from 1-minute bars.</div>
-  </div>
-  <div class="row" style="margin:0 0 10px">
-    <button type="button" class="ghost" id="modeBreak" onclick="setBookMode('break')">OR BREAK</button>
-    <button type="button" class="ghost" id="modeStrad" onclick="setBookMode('straddle')">STRADDLE</button>
-  </div>
-  <button type="button" class="lock wait" id="lockBtn">WAIT<span class="tiny" id="lockWhy">Conditions not met. Do not place an order.</span></button>
-  <div class="exec" id="execRow">
-    <button type="button" class="go-call" id="execCall" onclick="executeSide('CALL')">BUY CALL (SPX)</button>
-    <button type="button" class="go-put" id="execPut" onclick="executeSide('PUT')">BUY PUT (SPX)</button>
-  </div>
-  <button type="button" class="lock nocredit" id="creditBtn" onclick="onCreditTap()">NO PREMIUM SELLING<span class="tiny" id="creditWhy">Conditions not met.</span></button>
-
-  <section>
-    <h2>Playbook — when to click buy</h2>
-    <ol class="steps">
-      <li><b>6:10 AM PDT</b> — Manual Refresh. No order. Draw the two watch numbers.</li>
-      <li><b>6:30–6:45</b> — First 15 minutes after the cash open. Still WAIT. Refresh starts filling 1-minute bars.</li>
-      <li><b>OR BREAK book:</b> after 10:00 ET, buy the call only if the last 10 minutes stayed above OR high. Buy the put only if the last 10 minutes stayed below OR low. App now marks that hold from the 1-minute bars — you do not have to flip the switch by hand.</li>
-      <li><b>STRADDLE book:</b> after 9:45 ET (15 min wait), buy the ATM call <b>and</b> the ATM put. No OR-hold required. Last new entry 1:00 PM ET.</li>
-      <li><b>Straddle math:</b> 2× on the live leg ≈ scratch if the other side dies. 3× on the live leg (+200%) is the actual win. Combined debit is one risk unit.</li>
-      <li>Event day, VIX ≥ 24, or gap ≥ 0.80% — both books stay on WAIT. Naked short is never allowed.</li>
-      <li><b>8:30 AM PDT credit (optional):</b> only if the long did not fire <b>and</b> price is still inside the OR. Defined-risk 15-wide only. Never on the same morning as a straddle.</li>
-    </ol>
-  </section>
-
-  <div class="warn">Long 0DTE is still the main book. Afternoon credit is only when the morning long did not trigger <b>and</b> price is still in the box. Naked short is never allowed.</div>
-
-  <section>
-    <h2>GEX board</h2>
-    <div class="btns">
-      <button type="button" onclick="loadGex()">Load public GEX</button>
-      <button type="button" class="ghost" onclick="useWedPreset()">Load last saved GEX</button>
-    </div>
-    <p class="hint" id="gexStatus">Loads SquawkFlow latest.json when Safari can reach GitHub.</p>
-    <div class="row">
-      <div><label>Spot / ES proxy</label><input id="spot" type="number" value="7674" /></div>
-      <div><label>Regime</label>
-        <select id="regime">
-          <option value="positive">Positive GEX (mean-revert)</option>
-          <option value="negative">Negative GEX (trend)</option>
-        </select>
-      </div>
-    </div>
-    <div class="row">
-      <div><label>Gamma flip</label><input id="flip" type="number" value="7651" /></div>
-      <div><label>Vol trigger</label><input id="vtrig" type="number" value="7705" /></div>
-    </div>
-    <div class="row">
-      <div><label>Call wall</label><input id="cwall" type="number" value="7800" /></div>
-      <div><label>Put wall</label><input id="pwall" type="number" value="7500" /></div>
-    </div>
-    <div class="row">
-      <div><label>Magnet</label><input id="magnet" type="number" value="7700" /></div>
-      <div><label>VIX</label><input id="vix" type="number" value="15.7" /></div>
-    </div>
-    <label>0DTE book</label>
-    <select id="book">
-      <option value="short">Today’s expiry looks short gamma</option>
-      <option value="long">Today’s expiry looks long gamma</option>
-      <option value="unk">Unknown</option>
-    </select>
-  </section>
-
-  <section>
-    <h2>Open + confirmation</h2>
-    <div class="row">
-      <div><label>Prior close</label><input id="prior" type="number" value="7673.65" /></div>
-      <div><label>Event day</label>
-        <select id="event"><option value="n">No</option><option value="y">Yes — skip</option></select>
-      </div>
-    </div>
-    <div class="row">
-      <div><label>OR high</label><input id="orH" type="number" /></div>
-      <div><label>OR low</label><input id="orL" type="number" /></div>
-    </div>
-    <div class="toggle"><span>Accepted above OR after 10:15</span>
-      <label class="switch"><input id="above" type="checkbox" /><span class="slider"></span></label></div>
-    <div class="toggle"><span>Accepted below OR after 10:15</span>
-      <label class="switch"><input id="below" type="checkbox" /><span class="slider"></span></label></div>
-    <div class="toggle"><span>Whipsaw / both sides tagged</span>
-      <label class="switch"><input id="whip" type="checkbox" /><span class="slider"></span></label></div>
-    <div class="toggle"><span>Held 10 minutes outside OR (auto from 1-min bars)</span>
-      <label class="switch"><input id="held10" type="checkbox" /><span class="slider"></span></label></div>
-    <p class="hint" id="holdStatus">Hold is computed on Manual Refresh after 10:00 ET. You can still override the switch.</p>
-  </section>
-
-  <section>
-    <h2>Contract</h2>
-    <div class="row">
-      <div><label>Target delta</label>
-        <select id="delta">
-          <option value="0.30">0.30 — near money (default)</option>
-          <option value="0.25">0.25</option>
-          <option value="0.20">0.20 — more room, more decay</option>
-          <option value="0.15">0.15 — usually skip this far</option>
-        </select>
-      </div>
-      <div><label>Est. debit $</label><input id="debit" type="number" step="0.05" value="8.00" /></div>
-    </div>
-    <div class="row">
-      <div><label>Account $</label><input id="account" type="number" value="50000" /></div>
-      <div><label>Risk % of account</label><input id="riskPct" type="number" step="0.1" value="0.5" /></div>
-    </div>
-    <p class="hint">Risk % sizes the debit. Stop is −50% of that debit. 0.25–0.50% of account is the sane band.</p>
-    <div class="watch" style="position:static;margin-top:10px">
-      <div class="box" style="background:#1E3A5F">
-        <div class="lbl">TARGET — sell all</div>
-        <div class="px" id="tp1Px">—</div>
-        <div class="why" id="tp1Why">+100% · 2× debit</div>
-      </div>
-      <div class="box" style="background:#3B2A55">
-        <div class="lbl">STOP — sell all</div>
-        <div class="px" id="tp2Px">—</div>
-        <div class="why" id="tp2Why">−50% · half the debit</div>
-      </div>
-    </div>
-  </section>
-
-  <div id="verdict" class="verdict">
-    <div class="big">WAIT</div>
-    <div class="sub">Need GEX + opening range.</div>
-  </div>
-
-  <section>
-    <h2>Naked plan</h2>
-    <div id="plan" class="plan">Waiting on inputs.</div>
-    <button class="wide ghost" type="button" onclick="copyPlan()">Copy plan</button>
-    <button class="wide" type="button" onclick="savePlan()">Save this morning snapshot</button>
-  </section>
-
-  <section>
-    <h2>8:30 credit — only if still inside OR</h2>
-    <p class="hint" style="margin-top:0">Not a long. Defined-risk vertical only. Short strike ~20 pts outside the box, long 15 further. Collect credit. Buy back at 25¢ on the dollar (that is 75% profit). Stop if the spread doubles or SPX leaves the OR.</p>
-    <div class="row">
-      <div><label>Credit collected $</label><input id="creditPx" type="number" step="0.05" value="0.80"></div>
-      <div><label>Width (pts)</label><input id="creditW" type="number" value="15"></div>
-    </div>
-    <div class="watch" style="position:static;margin-top:10px">
-      <div class="box" style="background:#1E3A5F">
-        <div class="lbl">BUY BACK (75%)</div>
-        <div class="px" id="crTp">—</div>
-        <div class="why" id="crTpWhy">25% of credit left</div>
-      </div>
-      <div class="box" style="background:#3B2A55">
-        <div class="lbl">STOP (2×)</div>
-        <div class="px" id="crSt">—</div>
-        <div class="why" id="crStWhy">spread worth 2× credit</div>
-      </div>
-    </div>
-    <div id="creditPlan" class="plan" style="margin-top:10px">Need OR high / OR low.</div>
-    <button class="wide" type="button" onclick="copyCredit('CONDOR')">Copy iron condor ticket</button>
-    <button class="wide ghost" type="button" onclick="copyCredit('CALL')">Copy call credit only</button>
-    <button class="wide ghost" type="button" onclick="copyCredit('PUT')">Copy put credit only</button>
-  </section>
-
-  <section>
-    <h2>Daily results</h2>
-    <p class="hint" style="margin-top:0">Log after the close. Stays on this phone (GitHub Pages). Use it to see skip vs trade, not to rewrite rules after one day.</p>
-    <div class="row">
-      <div>
-        <label>Date</label>
-        <input id="resDate" type="date">
-      </div>
-      <div>
-        <label>Action taken</label>
-        <select id="resAct">
-          <option value="WAIT">WAIT — no trade</option>
-          <option value="CALL">Bought CALL</option>
-          <option value="PUT">Bought PUT</option>
-          <option value="STRADDLE">Bought STRADDLE</option>
-        </select>
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label>OR high</label>
-        <input id="resOrH" inputmode="decimal" placeholder="from red box">
-      </div>
-      <div>
-        <label>OR low</label>
-        <input id="resOrL" inputmode="decimal" placeholder="from green box">
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label>Outcome</label>
-        <select id="resOut">
-          <option value="none">No trade</option>
-          <option value="tp1">Hit +100% target</option>
-          <option value="stop">Hit −50% stop</option>
-          <option value="expire">Expired / time stop</option>
-          <option value="scratch">Scratch / even</option>
-          <option value="credit75">Credit hit 75% TP</option>
-          <option value="creditstop">Credit stopped 2×</option>
-        </select>
-      </div>
-      <div>
-        <label>P&amp;L $ (optional)</label>
-        <input id="resPnl" inputmode="decimal" placeholder="e.g. -800 or 400">
-      </div>
-    </div>
-    <label>Note</label>
-    <input id="resNote" placeholder="e.g. held 12 min below 7647 after 8:30 — skipped">
-    <button class="wide" type="button" onclick="saveDay()">Save today's result</button>
-    <div id="resStats" class="plan" style="margin-top:10px"></div>
-    <div id="logs"></div>
-  </section>
-
-  <p class="hint">Safari → Share → Add to Home Screen. Not financial advice. Short naked calls/puts are excluded on purpose.</p>
-
-<script>
-const $ = id => document.getElementById(id);
-const num = id => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : null; };
-const rnd5 = x => Math.round(x / 5) * 5;
-let lastChecked = "";
-let lastPxTag = "";
-let bookMode = localStorage.getItem("spxnaked_mode") || "straddle";
-function setBookMode(m) {
-  bookMode = m === "straddle" ? "straddle" : "break";
-  try { localStorage.setItem("spxnaked_mode", bookMode); } catch (e) {}
-  paintModeBtns();
-  render();
-}
-function paintModeBtns() {
-  const b = $("modeBreak"), s = $("modeStrad");
-  if (!b || !s) return;
-  b.style.background = bookMode === "break" ? "var(--accent)" : "#4A2C4E";
-  b.style.color = bookMode === "break" ? "#2A1020" : "var(--ink)";
-  s.style.background = bookMode === "straddle" ? "var(--accent)" : "#4A2C4E";
-  s.style.color = bookMode === "straddle" ? "#2A1020" : "var(--ink)";
-}
-function stamp() {
-  lastChecked = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  return lastChecked;
-}
-
-async function fetchJson(url) {
-  const attempts = [
-    "https://spx-proxy.als-0511.workers.dev/?url=" + encodeURIComponent(url),
-    url,
-    "https://corsproxy.io/?" + encodeURIComponent(url),
-    "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
-  ];
-  let lastErr;
-  for (const u of attempts) {
-    try {
-      const ctl = new AbortController();
-      const to = setTimeout(() => ctl.abort(), 8000);
-      const r = await fetch(u, { cache: "no-store", signal: ctl.signal });
-      clearTimeout(to);
-      if (!r.ok) throw new Error("http " + r.status);
-      return await r.json();
-    } catch (e) { lastErr = e; }
-  }
-  throw lastErr || new Error("fetch failed");
-}
-
-async function yahooChart(symbol) {
-  const url = "https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(symbol) + "?interval=1m&range=1d&includePrePost=false";
-  const j = await fetchJson(url);
-  const res = j.chart.result[0];
-  const m = res.meta;
-  return {
-    last: m.regularMarketPrice ?? m.previousClose,
-    prev: m.chartPreviousClose ?? m.previousClose,
-    ts: res.timestamp || [],
-    high: (res.indicators.quote[0].high) || [],
-    low: (res.indicators.quote[0].low) || [],
-    close: (res.indicators.quote[0].close) || []
-  };
-}
-
-function etParts(unix) {
-  const s = new Date(unix * 1000).toLocaleString("en-US", { timeZone: "America/New_York", hour12: false, hour: "2-digit", minute: "2-digit" });
-  const [hh, mm] = s.split(":").map(Number);
-  return hh * 60 + mm;
-}
-
-function sessionRange(chart) {
-  let hi = -Infinity, lo = Infinity, bars = 0;
-  for (let i = 0; i < chart.ts.length; i++) {
-    const mins = etParts(chart.ts[i]);
-    if (mins < 9 * 60 + 30 || mins >= 16 * 60) continue;
-    const h = chart.high[i], l = chart.low[i];
-    if (h == null || l == null) continue;
-    if (h > hi) hi = h;
-    if (l < lo) lo = l;
-    bars++;
-  }
-  if (bars < 1 || !isFinite(hi) || !isFinite(lo)) return null;
-  return { high: Math.round(hi * 100) / 100, low: Math.round(lo * 100) / 100, bars };
-}
-
-function nearestWall(spot, cwall, pwall, magnet) {
-  const cand = [];
-  if (cwall != null) cand.push({ n: cwall, k: "call wall" });
-  if (pwall != null) cand.push({ n: pwall, k: "put wall" });
-  if (magnet != null) cand.push({ n: magnet, k: "magnet" });
-  if (!cand.length) return null;
-  if (spot == null) return cand[0];
-  cand.sort((a, b) => Math.abs(a.n - spot) - Math.abs(b.n - spot));
-  return cand[0];
-}
-
-function persistLive() {
-  const keys = ["spot","prior","flip","vtrig","cwall","pwall","magnet","vix","regime","book","orH","orL"];
-  const o = {};
-  keys.forEach(k => { if ($(k)) o[k] = $(k).value; });
-  o.sessHi = $("sessHi") ? $("sessHi").textContent : "";
-  o.sessLo = $("sessLo") ? $("sessLo").textContent : "";
-  o.nearWall = $("nearWall") ? $("nearWall").textContent : "";
-  o.t = Date.now();
-  try { localStorage.setItem("spxnaked_live", JSON.stringify(o)); } catch (e) {}
-}
-
-function restoreLive() {
-  try {
-    const o = JSON.parse(localStorage.getItem("spxnaked_live") || "null");
-    if (!o || !o.t) return false;
-    if (Date.now() - o.t > 18 * 60 * 60 * 1000) return false;
-    ["spot","prior","flip","vtrig","cwall","pwall","magnet","vix","regime","book","orH","orL"].forEach(k => {
-      if (o[k] != null && $(k)) $(k).value = o[k];
-    });
-    return true;
-  } catch (e) { return false; }
-}
-
-function paintLive3(sess, spot) {
-  const cwall = num("cwall"), pwall = num("pwall"), magnet = num("magnet");
-  const hi = sess ? sess.high : null;
-  const lo = sess ? sess.low : null;
-  $("sessHi").textContent = hi != null ? Math.round(hi) : "—";
-  $("sessLo").textContent = lo != null ? Math.round(lo) : "—";
-  $("sessHiWhy").textContent = hi != null ? "Resistance until new high" : "Need RTH bars";
-  $("sessLoWhy").textContent = lo != null ? "Support until new low" : "Need RTH bars";
-  const w = nearestWall(spot, cwall, pwall, magnet);
-  if (w) {
-    $("nearWall").textContent = Math.round(w.n);
-    const side = spot != null && w.n >= spot ? "overhead" : "underneath";
-    $("nearWallWhy").textContent = w.k + " · " + side;
-    if (magnet == null && w.n) $("magnet").value = Math.round(w.n);
-  } else {
-    $("nearWall").textContent = "—";
-    $("nearWallWhy").textContent = "Load GEX first";
-  }
-}
-
-function holdOutside(chart, orH, orL, needMin) {
-  needMin = needMin || 10;
-  if (!chart || orH == null || orL == null) return { call: false, put: false, minsCall: 0, minsPut: 0 };
-  let runCall = 0, runPut = 0, seen = false;
-  for (let i = chart.ts.length - 1; i >= 0; i--) {
-    const mins = etParts(chart.ts[i]);
-    if (mins < 9 * 60 + 30 || mins >= 16 * 60) continue;
-    const h = chart.high[i], l = chart.low[i], c = chart.close[i];
-    const px = c != null ? c : (h != null && l != null ? (h + l) / 2 : null);
-    if (px == null) continue;
-    seen = true;
-    if (l != null && l > orH) { runCall++; runPut = 0; }
-    else if (h != null && h < orL) { runPut++; runCall = 0; }
-    else { break; }
-    if (runCall >= needMin || runPut >= needMin) break;
-  }
-  return { call: runCall >= needMin, put: runPut >= needMin, minsCall: runCall, minsPut: runPut, seen };
-}
-
-function openingRange(chart) {
-  let hi = -Infinity, lo = Infinity, bars = 0;
-  for (let i = 0; i < chart.ts.length; i++) {
-    const mins = etParts(chart.ts[i]);
-    if (mins < 9 * 60 + 30 || mins >= 10 * 60) continue;
-    const h = chart.high[i], l = chart.low[i];
-    if (h == null || l == null) continue;
-    if (h > hi) hi = h;
-    if (l < lo) lo = l;
-    bars++;
-  }
-  if (bars < 5 || !isFinite(hi) || !isFinite(lo)) return null;
-  return { high: Math.round(hi * 100) / 100, low: Math.round(lo * 100) / 100, bars };
-}
-
-function etNowMinutes() {
-  const s = new Date().toLocaleString("en-US", { timeZone: "America/New_York", hour12: false, hour: "2-digit", minute: "2-digit" });
-  const [hh, mm] = s.split(":").map(Number);
-  return hh * 60 + mm;
-}
-
-async function loadGex() {
-  $("gexStatus").textContent = "Loading GEX…";
-  const ctl = new AbortController();
-  const to = setTimeout(() => ctl.abort(), 8000);
-  const gexUrl = "https://raw.githubusercontent.com/dhawalc/spx-gamma-levels/main/data/latest.json";
-  const r = await fetch("https://spx-proxy.als-0511.workers.dev/?url=" + encodeURIComponent(gexUrl), { cache: "no-store", signal: ctl.signal });
-  clearTimeout(to);
-  const j = await r.json();
-  $("flip").value = Math.round(j.zero_gamma_flip);
-  $("cwall").value = j.call_wall;
-  $("pwall").value = j.put_wall;
-  $("vtrig").value = Math.round(j.vol_trigger);
-  $("regime").value = (j.gamma_regime || "").toLowerCase().includes("neg") ? "negative" : "positive";
-  $("gexStatus").textContent = `GEX ${j.date} · ${(j.net_gex_dollars/1e9).toFixed(1)}B · ${j.gamma_regime}`;
-  return j;
-}
-
-async function autoRefresh() {
-  const btn = $("autoBtn");
-  btn.disabled = true;
-  let left = 8;
-  btn.textContent = "REFRESHING… " + left + "s";
-  const tick = setInterval(() => {
-    left -= 1;
-    if (left >= 0) btn.textContent = "REFRESHING… " + left + "s";
-  }, 1000);
-  const bits = [];
-  try {
-    try { await loadGex(); bits.push("GEX ok"); }
-    catch (e) { bits.push("GEX failed"); }
-
-    try {
-      const [spx, vix, es] = await Promise.all([
-        yahooChart("^GSPC"), yahooChart("^VIX"), yahooChart("ES=F")
-      ]);
-      if (spx.prev) $("prior").value = Math.round(spx.prev * 100) / 100;
-      if (vix.last) $("vix").value = Math.round(vix.last * 100) / 100;
-      const etm = etNowMinutes();
-      const cashOpen = etm >= 9 * 60 + 30 && etm < 16 * 60;
-      if (!cashOpen && es.last) {
-        $("spot").value = Math.round(es.last);
-        lastPxTag = "ES " + Math.round(es.last);
-      } else if (spx.last) {
-        $("spot").value = Math.round(spx.last * 100) / 100;
-        lastPxTag = "SPX " + Math.round(spx.last);
-      } else if (es.last) {
-        lastPxTag = "ES " + Math.round(es.last);
-      }
-
-      const sess = sessionRange(spx) || sessionRange(es);
-      if (sess) {
-        paintLive3(sess, num("spot"));
-        bits.push("H/L " + sess.high + " / " + sess.low);
-      } else {
-        paintLive3(null, num("spot"));
-      }
-
-      if (etm < 10 * 60) {
-        bits.push("OR not ready until 10:00 ET");
-      } else {
-        const or = openingRange(spx) || openingRange(es);
-        if (or) {
-          $("orH").value = or.high;
-          $("orL").value = or.low;
-          const px = num("spot");
-          if (px != null) {
-            $("above").checked = px > or.high;
-            $("below").checked = px < or.low;
-          }
-          const hold = holdOutside(spx, or.high, or.low, 10) || holdOutside(es, or.high, or.low, 10);
-          if (hold.call) {
-            $("held10").checked = true;
-            $("above").checked = true;
-            $("below").checked = false;
-            $("whip").checked = false;
-            bits.push("HOLD CALL " + hold.minsCall + "m above " + or.high);
-          } else if (hold.put) {
-            $("held10").checked = true;
-            $("below").checked = true;
-            $("above").checked = false;
-            $("whip").checked = false;
-            bits.push("HOLD PUT " + hold.minsPut + "m below " + or.low);
-          } else {
-            $("held10").checked = false;
-            if (px != null && px > or.high && px < or.low) { /* impossible */ }
-            const taggedHi = (sess && sess.high > or.high + 0.5) || (px != null && px > or.high);
-            const taggedLo = (sess && sess.low < or.low - 0.5) || (px != null && px < or.low);
-            if (sess && sess.high >= or.high && sess.low <= or.low && (sess.high - or.high > 0.25) && (or.low - sess.low > 0.25)) {
-              $("whip").checked = true;
-              bits.push("both sides of OR tagged");
-            } else {
-              bits.push("no 10m hold yet (C" + hold.minsCall + "/P" + hold.minsPut + ")");
-            }
-            if ($("holdStatus")) $("holdStatus").textContent = "No 10-min hold. Call run " + hold.minsCall + "m · put run " + hold.minsPut + "m.";
-          }
-          if ($("holdStatus") && (hold.call || hold.put)) {
-            $("holdStatus").textContent = hold.call
-              ? ("Auto-hold: " + hold.minsCall + " min above OR high " + or.high)
-              : ("Auto-hold: " + hold.minsPut + " min below OR low " + or.low);
-          }
-          bits.push("OR " + or.high + " / " + or.low + " (" + or.bars + " bars)");
-        } else {
-          bits.push("OR bars missing");
-        }
-      }
-      const wall = nearestWall(num("spot"), num("cwall"), num("pwall"), num("magnet"));
-      if (wall) {
-        $("magnet").value = Math.round(wall.n);
-        bits.push("wall " + Math.round(wall.n));
-      }
-      bits.push("Yahoo ok");
-    } catch (e) { bits.push("Yahoo blocked — type spot/VIX/OR"); }
-
-    stamp();
-    render();
-    persistLive();
-    $("autoMeta").textContent = lastChecked + " · " + bits.join(" · ");
-  } finally {
-    clearInterval(tick);
-    btn.disabled = false;
-    btn.textContent = lastPxTag ? ("MANUAL REFRESH (" + lastPxTag + ")") : "MANUAL REFRESH";
-  }
-}
-
-function useWedPreset() {
-  $("spot").value = 7674; $("prior").value = 7673.65;
-  $("flip").value = 7651; $("vtrig").value = 7705;
-  $("cwall").value = 7800; $("pwall").value = 7500;
-  $("magnet").value = 7700; $("vix").value = 15.7;
-  $("regime").value = "positive"; $("book").value = "short";
-  $("gexStatus").textContent = "Last saved GEX snapshot loaded (not live).";
-  render();
-}
-
-function otmPts(delta) {
-  if (delta >= 0.28) return 15;
-  if (delta >= 0.23) return 25;
-  if (delta >= 0.18) return 40;
-  return 55;
-}
-
-function render() {
-  const spot = num("spot"), prior = num("prior"), flip = num("flip"), vtrig = num("vtrig");
-  const cwall = num("cwall"), pwall = num("pwall"), magnet = num("magnet"), vix = num("vix");
-  const orH = num("orH"), orL = num("orL");
-  const debit = num("debit") || 0, acct = num("account") || 0, rp = num("riskPct") || 0;
-  const delta = parseFloat($("delta").value);
-  const regime = $("regime").value, book = $("book").value;
-  const event = $("event").value === "y";
-  const above = $("above").checked, below = $("below").checked, whip = $("whip").checked;
-  const held10 = $("held10").checked;
-
-  // Clear watch levels: OR is the trigger once known. Until then use prior high/low proxies.
-  let callLvl = orH, putLvl = orL, callWhy = "", putWhy = "";
-  if (orH != null) { callWhy = "OR high. Hold 10 min above, then buy call."; }
-  else { callLvl = magnet && spot && magnet > spot ? magnet : (vtrig || 7700); callWhy = "Premarket proxy (magnet/vol trigger). Replace with OR high at 10:00."; }
-  if (orL != null) { putWhy = "OR low. Hold 10 min below, then buy put."; }
-  else { putLvl = flip || 7651; putWhy = "Premarket proxy (gamma flip). Replace with OR low at 10:00."; }
-  $("callPx").textContent = callLvl != null ? Math.round(callLvl) : "—";
-  $("putPx").textContent = putLvl != null ? Math.round(putLvl) : "—";
-  $("callWhy").textContent = callWhy;
-  $("putWhy").textContent = putWhy;
-  paintLive3(
-    (num("orH") != null || $("sessHi").textContent !== "—")
-      ? { high: parseFloat($("sessHi").textContent) || num("orH"), low: parseFloat($("sessLo").textContent) || num("orL") }
-      : null,
-    spot
-  );
-
-  const gap = (spot && prior) ? ((spot - prior) / prior) * 100 : null;
-  const orW = (orH != null && orL != null && orH > orL) ? orH - orL : null;
-  const orPct = (orW && spot) ? (orW / spot) * 100 : null;
-
-  const skip = [];
-  if (event) skip.push("event day");
-  if (gap != null && Math.abs(gap) >= 0.80) skip.push("gap ≥ 0.80%");
-  if (whip && bookMode !== "straddle") skip.push("whipsaw");
-  if (bookMode !== "straddle" && orPct != null && orPct < 0.15) skip.push("OR too tight");
-  if (vix != null && vix >= 24) skip.push("VIX ≥ 24 — premium is rich and unstable");
-  if (above && below) skip.push("both sides marked");
-
-  let bias = "NONE", conf = 0;
-  const notes = [];
-  if (regime === "positive") notes.push("+GEX: magnet/fade days. Naked longs die in chop — need a real OR hold.");
-  else notes.push("−GEX: trend days. Naked longs need follow-through or they decay.");
-  if (book === "short") { notes.push("Short 0DTE book: moves can extend. Still flatten into 3:00."); conf += 1; }
-  if (book === "long") { notes.push("Long 0DTE book: pin risk. Don’t hold a winner into the close hoping for more."); conf -= 1; }
-  if (spot && magnet && Math.abs(spot - magnet) <= 12) notes.push("On the magnet. Naked direction is a coin flip until OR breaks.");
-
-  const etmNow = etNowMinutes();
-  const afterOpen15 = etmNow >= 9 * 60 + 45;
-  const longsOpen = etmNow >= 9 * 60 + 45 && etmNow < 13 * 60; // last new long 1:00 PM ET
-  const cashHours = etmNow >= 9 * 60 + 30 && etmNow < 16 * 60;
-
-  if (bookMode === "straddle") {
-    if (!skip.length && afterOpen15 && longsOpen) {
-      bias = "STRADDLE";
-      conf += 2;
-      if (orW != null && orPct != null && orPct < 0.25) conf += 1;
-    }
-  } else {
-    if (!skip.length && above && !below && held10 && longsOpen) { bias = "CALL"; conf += regime === "negative" ? 3 : 2; }
-    else if (!skip.length && below && !above && held10 && longsOpen) { bias = "PUT"; conf += regime === "negative" ? 3 : 2; }
-  }
-  if (skip.length) { bias = "NONE"; conf = 0; }
-  if (!longsOpen && cashHours && etmNow >= 13 * 60) notes.push("Past 1:00 PM ET — no new long. Manage or flatten only.");
-  if (!afterOpen15 && cashHours) notes.push("First 15 minutes after the open — WAIT.");
-
-  const lock = $("lockBtn");
-  const why = $("lockWhy");
-  const execRow = $("execRow");
-  $("execCall").style.display = "none";
-  $("execPut").style.display = "none";
-  execRow.classList.remove("show");
-
-  if (bias === "CALL") {
-    lock.className = "lock call";
-    lock.childNodes[0].textContent = "PLACE CALL" + (lastChecked ? " (last checked " + lastChecked + ")" : "");
-    why.textContent = "Held 10 min above OR high " + orH + ". Buy Call is unlocked.";
-    execRow.classList.add("show");
-    $("execCall").style.display = "block";
-    {
-      const s = spot || callLvl || 0;
-      const k = rnd5(s + otmPts(delta));
-      $("execCall").textContent = "BUY CALL " + k + " (SPX " + Math.round(s) + ")";
-    }
-  } else if (bias === "PUT") {
-    lock.className = "lock put";
-    lock.childNodes[0].textContent = "PLACE PUT" + (lastChecked ? " (last checked " + lastChecked + ")" : "");
-    why.textContent = "Held 10 min below OR low " + orL + ". Buy Put is unlocked.";
-    execRow.classList.add("show");
-    $("execPut").style.display = "block";
-    {
-      const s = spot || putLvl || 0;
-      const k = rnd5(s - otmPts(delta));
-      $("execPut").textContent = "BUY PUT " + k + " (SPX " + Math.round(s) + ")";
-    }
-  } else if (bias === "STRADDLE") {
-    lock.className = "lock call";
-    lock.childNodes[0].textContent = "PLACE STRADDLE" + (lastChecked ? " (last checked " + lastChecked + ")" : "");
-    why.textContent = "15-min wait done. Buy ATM call and ATM put. 2× live leg = scratch. 3× live leg = win.";
-    execRow.classList.add("show");
-    $("execCall").style.display = "block";
-    $("execPut").style.display = "block";
-    {
-      const s = spot || 0;
-      const k = rnd5(s);
-      $("execCall").textContent = "BUY CALL " + k + " (ATM)";
-      $("execPut").textContent = "BUY PUT " + k + " (ATM)";
-    }
-  } else {
-    lock.className = "lock wait";
-    lock.childNodes[0].textContent = "WAIT" + (lastChecked ? " (last checked " + lastChecked + ")" : "");
-    let reason = "Do not place an order.";
-    if (event) reason = "Event day. WAIT.";
-    else if (whip && bookMode !== "straddle") reason = "Whipsaw. WAIT.";
-    else if (bookMode === "break" && orH == null) reason = "No opening range yet. WAIT.";
-    else if (bookMode === "break" && !held10) reason = "Need a 10-minute hold outside the range. Refresh to auto-mark it.";
-    else if (bookMode === "break" && above && below) reason = "Both sides tagged. WAIT.";
-    else if (bookMode === "straddle" && !afterOpen15) reason = "First 15 minutes. WAIT.";
-    else if (!longsOpen) reason = "No new longs after 1:00 PM ET. WAIT.";
-    else reason = (skip[0] ? skip[0] + ". " : "") + "WAIT.";
-    why.textContent = reason;
-  }
-
-  paintPremiumBtn(bias, skip, event, whip, vix, spot, orH, orL, regime);
-
-  let grade = "WAIT";
-  if (skip.length || (bookMode === "break" && orH != null && bias === "NONE")) grade = "NO TRADE";
-  else if (bookMode === "break" && orH == null) grade = "PREMARKET";
-  else if (bias === "STRADDLE") grade = "TAKE STRADDLE";
-  else if (conf >= 4) grade = "TAKE CALL/PUT";
-  else if (conf >= 2) grade = "SMALL ONLY";
-  else if (bias !== "NONE") grade = "MARGINAL — prefer skip";
-
-  const color = grade.startsWith("NO") || grade.startsWith("MARG") ? "var(--skip)"
-    : bias === "CALL" ? "var(--call)" : bias === "PUT" ? "var(--put)" : "var(--gold)";
-
-  $("verdict").innerHTML = `<div class="big" style="color:${color}">${grade}</div>
-    <div class="sub"><span class="tag ${bias==="CALL"?"bad":bias==="PUT"?"ok":"mid"}">${bias === "NONE" ? "FLAT" : "LONG "+bias}</span>
-    ${skip.length ? skip.join(" · ") : (orPct!=null ? "OR "+orPct.toFixed(2)+"%" : (bookMode==="straddle" ? "straddle book" : "OR not in"))}
-    ${gap!=null ? " · gap "+gap.toFixed(2)+"%" : ""}</div>`;
-
-  const maxRisk = acct * (rp / 100);
-  const per = debit * 100;
-  const qty = per > 0 ? Math.max(0, Math.floor(maxRisk / per)) : 0;
-  const stopPx = +(debit * 0.50).toFixed(2);
-  const t1Px = +(debit * 2.00).toFixed(2);
-  $("tp1Px").textContent = debit ? ("$" + t1Px) : "—";
-  $("tp2Px").textContent = debit ? ("$" + stopPx) : "—";
-  $("tp1Why").textContent = "+100% · sell all " + (qty || "") + " contracts";
-  $("tp2Why").textContent = "−50% · sell all if mark ≤ $" + stopPx;
-
-  let plan = "";
-  if (bias === "NONE" || grade === "NO TRADE" || grade.startsWith("MARG")) {
-    plan = "<b>No naked option.</b> Sitting out is the high-probability action. " + notes.join(" ");
-  } else if (bias === "STRADDLE") {
-    const s = spot || 7674;
-    const k = rnd5(s);
-    const perLeg = debit;
-    const totalDeb = perLeg * 2;
-    const scratchPx = +(perLeg * 2.00).toFixed(2);
-    const winPx = +(perLeg * 3.00).toFixed(2);
-    const stopPxS = +(perLeg * 0.50).toFixed(2);
-    const maxRiskS = acct * (rp / 100);
-    const qtyS = totalDeb > 0 ? Math.max(0, Math.floor(maxRiskS / (totalDeb * 100))) : 0;
-    $("tp1Px").textContent = perLeg ? ("$" + winPx) : "—";
-    $("tp2Px").textContent = perLeg ? ("$" + stopPxS) : "—";
-    $("tp1Why").textContent = "+200% on live leg · 3× · qty " + (qtyS || "");
-    $("tp2Why").textContent = "−50% per leg · flatten pair if both dying";
-    plan = `<b>BUY STRADDLE</b> · 0DTE SPX ${k} CALL + ${k} PUT · ATM<br>
-    <b>Est debit:</b> $${perLeg.toFixed(2)} per leg · $${totalDeb.toFixed(2)} pair ($${ (totalDeb*100).toFixed(0)} each pair)<br>
-    <b>Contracts:</b> ${qtyS} pair at ${rp}% of $${acct.toLocaleString()}. Combined debit is one risk unit.<br>
-    <b>Enter:</b> after 9:45 ET, last new entry 1:00 PM ET. Limit at mid. Buy both legs together.<br>
-    <b>Scratch:</b> sell the live leg at $${scratchPx} (2× that premium). If the other expires near 0, the pair is about flat.<br>
-    <b>Target:</b> sell the live leg at $${winPx} (3× / +200%). That is the actual win even if the other side dies.<br>
-    <b>Dead leg:</b> flatten it when the live leg is taken off, or keep as a tiny lotto with a 2:45 ET hard stop.<br>
-    <b>Pair stop:</b> if neither leg is working, sell ALL if the combined mark is ≤ 50% of the pair debit.<br>
-    <b>Time stop:</b> 2:45–3:00 ET. Do not hold a decaying pair into the cash print.<br>
-    <b>Never:</b> sell premium on the same morning. Never naked short.`;
-    plan += "<br><br>" + notes.map(x => "• " + x).join("<br>");
-  } else {
-    const s = spot || 7674;
-    const pts = otmPts(delta);
-    if (bias === "CALL") {
-      const k = rnd5(s + pts);
-      const stopLvl = orL != null ? orL - 2 : s - 16;
-      const t1 = magnet && magnet > s ? magnet : (vtrig || s + 20);
-      const t2 = Math.min(cwall || s + 60, s + 50);
-      plan = `<b>BUY 0DTE SPX ${k} CALL</b> · target ~${delta.toFixed(2)} delta · est debit $${debit.toFixed(2)} ($${per.toFixed(0)} each)<br>
-      <b>Contracts:</b> ${qty} at ${rp}% of $${acct.toLocaleString()}. Max planned loss is 50% of debit if the stop is honored.<br>
-      <b>Enter:</b> 10:15–11:30 ET only, after a 10-minute hold above OR high ${orH ?? "—"}. Limit at mid. No chase.<br>
-      <b>Underlying stop:</b> SPX back through ${stopLvl} (OR low). Flatten immediately.<br>
-      <b>Premium stop:</b> sell ALL if mark ≤ $${stopPx} (−50%).<br>
-      <b>Target:</b> sell ALL if mark ≥ $${t1Px} (+100%). No runner.<br>
-      <b>Time stop:</b> 2:45–3:00 ET no matter what. Last-hour gamma is how naked longs donate the win back.<br>
-      <b>Never:</b> roll, add, or turn it into a short if it fails.`;
-    } else {
-      const k = rnd5(s - pts);
-      const stopLvl = orH != null ? orH + 2 : s + 16;
-      const t1 = magnet && magnet < s ? magnet : (flip || s - 20);
-      const t2 = Math.max(pwall || s - 60, s - 50);
-      plan = `<b>BUY 0DTE SPX ${k} PUT</b> · target ~${delta.toFixed(2)} delta · est debit $${debit.toFixed(2)} ($${per.toFixed(0)} each)<br>
-      <b>Contracts:</b> ${qty} at ${rp}% of $${acct.toLocaleString()}. Max planned loss is 50% of debit if the stop is honored.<br>
-      <b>Enter:</b> 10:15–11:30 ET only, after a 10-minute hold below OR low ${orL ?? "—"}. Limit at mid.<br>
-      <b>Underlying stop:</b> SPX reclaims ${stopLvl} (OR high).<br>
-      <b>Premium stop:</b> sell ALL if mark ≤ $${stopPx} (−50%).<br>
-      <b>Target:</b> sell ALL if mark ≥ $${t1Px} (+100%). No runner.<br>
-      <b>Time stop:</b> 2:45–3:00 ET. Do not hold into the cash print hoping for extra.<br>
-      <b>Never:</b> average a loser or flip to a short call.`;
-    }
-    plan += "<br><br>" + notes.map(x => "• " + x).join("<br>");
-  }
-  $("plan").innerHTML = plan;
-  paintCredit();
-}
-
-let creditReady = false;
-function paintPremiumBtn(bias, skip, event, whip, vix, spot, orH, orL, regime) {
-  const btn = $("creditBtn");
-  const why = $("creditWhy");
-  creditReady = false;
-  const etm = etNowMinutes();
-  const w = num("creditW") || 15;
-  const inside = orH != null && orL != null && spot != null && spot <= orH && spot >= orL;
-  const sc = orH != null ? rnd5(orH + 20) : null;
-  const lc = sc != null ? sc + w : null;
-  const sp = orL != null ? rnd5(orL - 20) : null;
-  const lp = sp != null ? sp - w : null;
-
-  if (bias === "CALL" || bias === "PUT" || bias === "STRADDLE") {
-    btn.className = "lock nocredit";
-    btn.childNodes[0].textContent = "NO PREMIUM SELLING";
-    why.textContent = "Long is unlocked. Do not sell premium.";
-    return;
-  }
-  if (event || (vix != null && vix >= 24) || whip || skip.includes("gap ≥ 0.80%")) {
-    btn.className = "lock nocredit";
-    btn.childNodes[0].textContent = "NO PREMIUM SELLING";
-    why.textContent = skip[0] || (event ? "Event day." : "Filters failed.");
-    return;
-  }
-  if (orH == null || orL == null) {
-    btn.className = "lock nocredit";
-    btn.childNodes[0].textContent = "NO PREMIUM SELLING";
-    why.textContent = "No opening range yet.";
-    return;
-  }
-  if (!inside) {
-    btn.className = "lock nocredit";
-    btn.childNodes[0].textContent = "NO PREMIUM SELLING";
-    why.textContent = "Price is outside the OR. Do not sell premium.";
-    return;
-  }
-  if (regime === "negative") {
-    btn.className = "lock nocredit";
-    btn.childNodes[0].textContent = "NO PREMIUM SELLING";
-    why.textContent = "−GEX trend day. Skip afternoon credit.";
-    return;
-  }
-  if (etm < 11 * 60 + 30) {
-    btn.className = "lock nocredit";
-    btn.childNodes[0].textContent = "NO PREMIUM SELLING";
-    why.textContent = "Clock before 8:30 AM PDT. Wait on credit.";
-    return;
-  }
-  creditReady = true;
-  btn.className = "lock credit";
-  btn.childNodes[0].textContent = "SELL PREMIUM";
-  why.textContent = "STO " + sc + " call\nBTO " + lc + " call\nSTO " + sp + " put\nBTO " + lp + " put";
-}
-function onCreditTap() {
-  if (!creditReady) return;
-  copyCredit("CONDOR");
-}
-
-function paintCredit() {
-  const cr = num("creditPx") || 0;
-  const w = num("creditW") || 15;
-  const orH = num("orH"), orL = num("orL");
-  const tp = +(cr * 0.25).toFixed(2);
-  const st = +(cr * 2).toFixed(2);
-  $("crTp").textContent = cr ? ("$" + tp) : "—";
-  $("crSt").textContent = cr ? ("$" + st) : "—";
-  $("crTpWhy").textContent = "buy back · 75% of credit kept";
-  $("crStWhy").textContent = "stop if mark ≥ $" + st;
-  if (orH == null || orL == null) {
-    $("creditPlan").innerHTML = "Need today's OR high / OR low first.";
-    return;
-  }
-  const sc = rnd5(orH + 20);
-  const lc = sc + w;
-  const sp = rnd5(orL - 20);
-  const lp = sp - w;
-  const maxLoss = ((w * 100) - (cr * 100)).toFixed(0);
-  $("creditPlan").innerHTML =
-    `<b>Iron condor</b> only if SPX is still between ${orH} and ${orL} at 8:30 AM PDT.<br>
-    Sell ${sc}/${lc} call credit · Sell ${sp}/${lp} put credit · ${w} wide.<br>
-    Credit ~$${cr.toFixed(2)} → buy back at <b>$${tp}</b> (75%). Stop <b>$${st}</b> (2×) or if price leaves the OR.<br>
-    Max loss per side ≈ $${maxLoss} if you let it go to width. Flatten 2:45 ET.<br>
-    <b>Skip credit</b> on event days, VIX ≥ 24, −GEX trend days, or if the box was already broken.`;
-}
-
-function copyCredit(kind) {
-  const cr = num("creditPx") || 0;
-  const w = num("creditW") || 15;
-  const orH = num("orH"), orL = num("orL");
-  if (orH == null || orL == null) { alert("Type today's OR high and low first."); return; }
-  const sc = rnd5(orH + 20);
-  const lc = sc + w;
-  const sp = rnd5(orL - 20);
-  const lp = sp - w;
-  const tp = (cr * 0.25).toFixed(2);
-  const st = (cr * 2).toFixed(2);
-  let lines;
-  if (kind === "CALL") {
-    lines = ["STO " + sc + " call", "BTO " + lc + " call", "STC both when mark = $" + tp + " (75%)", "BTC both if mark = $" + st + " (2× stop)"];
-  } else if (kind === "PUT") {
-    lines = ["STO " + sp + " put", "BTO " + lp + " put", "STC both when mark = $" + tp + " (75%)", "BTC both if mark = $" + st + " (2× stop)"];
-  } else {
-    lines = ["STO " + sc + " call", "BTO " + lc + " call", "STO " + sp + " put", "BTO " + lp + " put"];
-  }
-  const t = lines.join("\n");
-  navigator.clipboard.writeText(t).then(() => alert(t + "\n\nCopied. Place in the broker yourself.")).catch(() => alert(t));
-}
-
-function ticket(side) {
-  const debit = num("debit") || 0;
-  const s = num("spot") || 7674;
-  if (bookMode === "straddle") {
-    const k = rnd5(s);
-    const pair = debit * 2;
-    const qty = Math.max(1, Math.floor(((num("account")||0) * (num("riskPct")||0) / 100) / Math.max(pair * 100, 1)));
-    return [
-      "EXECUTE STRADDLE",
-      "Buy " + qty + " SPX 0DTE " + k + " CALL @ ~$" + debit.toFixed(2),
-      "Buy " + qty + " SPX 0DTE " + k + " PUT @ ~$" + debit.toFixed(2),
-      "Pair debit ~$" + pair.toFixed(2),
-      "SCRATCH live leg @ $" + (debit * 2.00).toFixed(2) + " (2×) — pair ~ flat if other dies",
-      "TARGET live leg @ $" + (debit * 3.00).toFixed(2) + " (+200% / 3×) — this is the win",
-      "PAIR STOP sell both if combined mark ≤ 50% of pair debit",
-      "Flatten 2:45–3:00 ET if still open",
-      "This app does not send the order to your broker. Paste into thinkorswim / Schwab."
-    ].join("\n");
-  }
-  const qty = Math.max(1, Math.floor(((num("account")||0) * (num("riskPct")||0) / 100) / Math.max(debit * 100, 1)));
-  const d = parseFloat($("delta").value);
-  const pts = otmPts(d);
-  const k = side === "CALL" ? rnd5(s + pts) : rnd5(s - pts);
-  return [
-    "EXECUTE " + side,
-    "Buy " + qty + " SPX 0DTE " + k + " " + side + " @ ~$" + debit.toFixed(2),
-    "TARGET sell ALL @ $" + (debit * 2.00).toFixed(2) + " (+100%)",
-    "STOP sell ALL @ $" + (debit * 0.50).toFixed(2) + " (−50%) or if SPX loses the OR",
-    "Flatten 2:45–3:00 ET if still open",
-    "This app does not send the order to your broker. Paste into thinkorswim / Schwab."
-  ].join("\n");
-}
-
-function executeSide(side) {
-  const t = ticket(side);
-  navigator.clipboard.writeText(t).then(() => {
-    alert(t + "\n\nCopied. Place it in the broker yourself.");
-  }).catch(() => alert(t));
-}
-
-function copyPlan() {
-  const t = $("verdict").innerText + "\n\n" + $("plan").innerText;
-  navigator.clipboard.writeText(t).then(()=>alert("Copied")).catch(()=>alert(t));
-}
-function savePlan() {
-  const days = loadDays();
-  days.unshift({
-    t: Date.now(),
-    date: new Date().toLocaleDateString(),
-    kind: "snapshot",
-    text: $("verdict").innerText + "\n" + $("plan").innerText
-  });
-  localStorage.setItem("spxnaked", JSON.stringify(days.slice(0, 80)));
-  showLogs();
-}
-function loadDays() {
-  return JSON.parse(localStorage.getItem("spxnaked") || "[]");
-}
-function saveDay() {
-  const rec = {
-    t: Date.now(),
-    kind: "result",
-    date: $("resDate").value || new Date().toISOString().slice(0,10),
-    act: $("resAct").value,
-    orH: $("resOrH").value || $("orH").value,
-    orL: $("resOrL").value || $("orL").value,
-    out: $("resOut").value,
-    pnl: $("resPnl").value,
-    note: $("resNote").value
-  };
-  const days = loadDays().filter(d => !(d.kind === "result" && d.date === rec.date));
-  days.unshift(rec);
-  localStorage.setItem("spxnaked", JSON.stringify(days.slice(0, 80)));
-  $("resNote").value = "";
-  $("resPnl").value = "";
-  showLogs();
-}
-function showLogs() {
-  const days = loadDays();
-  const res = days.filter(d => d.kind === "result");
-  const trades = res.filter(d => d.act !== "WAIT");
-  const waits = res.filter(d => d.act === "WAIT").length;
-  const wins = trades.filter(d => d.out === "tp1" || d.out === "tp2").length;
-  const pnl = res.reduce((s,d) => s + (parseFloat(d.pnl) || 0), 0);
-  $("resStats").innerHTML = res.length
-    ? `<b>${res.length} days logged</b> · WAIT ${waits} · trades ${trades.length} · TP hits ${wins} · P&amp;L $${pnl.toFixed(0)}`
-    : "No results yet. Log Wednesday as WAIT if you stayed flat.";
-  $("logs").innerHTML = days.map(l => {
-    if (l.kind === "result") {
-      return `<div class="log"><pre>${l.date} · ${l.act} · ${l.out}
-OR ${l.orH || "—"} / ${l.orL || "—"} · P&L ${l.pnl || "—"}
-${l.note || ""}</pre></div>`;
-    }
-    return `<div class="log"><pre>${l.date || new Date(l.t).toLocaleString()}
-${l.text || ""}</pre></div>`;
-  }).join("");
-}
-
-["spot","prior","flip","vtrig","cwall","pwall","magnet","vix","regime","book","event","orH","orL","above","below","whip","held10","delta","debit","account","riskPct","creditPx","creditW"]
-  .forEach(id => { $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
-restoreLive();
-paintModeBtns();
-render();
-try { $("resDate").value = new Date().toISOString().slice(0,10); } catch(e) {}
-showLogs();
-setTimeout(() => { autoRefresh().catch(() => {}); }, 400);
-</script>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="en"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1">&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1">&lt;meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"&gt;</p>
+<p class="p1">&lt;title&gt;SPX Desk&lt;/title&gt;</p>
+<p class="p1">&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>:root{--bg:#0b0f14;--card:#121821;--line:#243041;--txt:#e7eef7;--dim:#8aa0b5;--green:#22c55e;--red:#ef4444;--amber:#f59e0b}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>*{box-sizing:border-box}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 -apple-system,Segoe UI,Roboto,sans-serif;padding:12px}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>h1{font-size:18px;margin:0 0 8px}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.sub{color:var(--dim);font-size:12px;margin-bottom:10px}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.row{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:6px 0}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.k{color:var(--dim)} .v{font-weight:700}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.stack{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.chk{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.chk b{display:block}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.ok{color:var(--green)} .no{color:var(--red)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>button{width:100%;border:0;border-radius:10px;padding:14px;font-size:16px;font-weight:800;color:#04110a;background:var(--green);margin-top:8px}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>button.red{background:var(--red);color:#1a0505}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>button.gray{background:#2a3442;color:#9fb0c4}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn2 button{margin:0}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.meta{font-size:12px;color:var(--dim);margin-top:6px}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.pill.g{background:rgba(34,197,94,.15);color:var(--green)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.pill.a{background:rgba(245,158,11,.15);color:var(--amber)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>input,select{background:#0b0f14;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px;width:100%}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.small{font-size:12px;color:var(--dim)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.ticket{white-space:pre-wrap;font:12px/1.4 ui-monospace,monospace;background:#0b0f14;border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.hidden{display:none}</p>
+<p class="p1">&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h1&gt;SPX 0DTE Desk&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="sub"&gt;ATM straddle · arm 9:45 ET · single exit $23.50 · no scaling&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Book&lt;/span&gt;&lt;b&gt;ATM STRADDLE&lt;/b&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Spot&lt;/span&gt;&lt;span class="v" id="spot"&gt;—&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;OR 9:30–10:00&lt;/span&gt;&lt;span class="v" id="or"&gt;—&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;VIX&lt;/span&gt;&lt;span class="v" id="vix"&gt;—&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Gap %&lt;/span&gt;&lt;span class="v" id="gap"&gt;—&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Est. pair debit&lt;/span&gt;&lt;span class="v" id="debit"&gt;—&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Contracts / side&lt;/span&gt;&lt;span class="v" id="qty"&gt;1&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Account $&lt;/span&gt;&lt;input id="acct" type="number" value="100000" style="width:120px"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Risk %&lt;/span&gt;&lt;input id="risk" type="number" value="0.35" step="0.05" style="width:120px"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Event day&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;select id="event" style="width:120px"&gt;&lt;option&gt;No&lt;/option&gt;&lt;option&gt;Yes&lt;/option&gt;&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button id="refresh" class="gray" style="background:#2a3442;color:#9fb0c4"&gt;MANUAL REFRESH&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="meta" id="meta"&gt;Waiting for refresh…&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Lock&lt;/span&gt;&lt;span id="lock" class="pill a"&gt;WAIT&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="stack" id="stack"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="btn2 hidden" id="buys"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button id="buyCall"&gt;BUY CALL&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button id="buyPut" class="red"&gt;BUY PUT&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="ticket hidden" id="ticket"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="meta" id="reason"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="card small"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>Entry 9:45 ET. Skip: event / VIX≥24 / gap≥0.80% / before 9:45 / after 1:00 PM ET.&lt;br&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>Exit: sell &lt;b&gt;both legs as one order at $23.50&lt;/b&gt;. Pair stop if combined ≤ 50% of debit. Flatten 2:45 ET.</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script&gt;</p>
+<p class="p1">const ET='America/New_York';</p>
+<p class="p1">const $=id=&gt;document.getElementById(id);</p>
+<p class="p1">let data={spot:null,prev:null,vix:null,orHigh:null,orLow:null,bars:[]};</p>
+<p class="p1">function etNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:ET}));}</p>
+<p class="p1">function etYMD(d){return d.toLocaleDateString('en-CA',{timeZone:ET});}</p>
+<p class="p1">function etMin(d){const t=d.toLocaleTimeString('en-US',{timeZone:ET,hour12:false});const p=t.split(':');return +p[0 1];}</p>
+<p class="p1">async function yahoo(sym){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const u='https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'?interval=1m&amp;range=5d';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const r=await fetch(u); if(!r.ok) throw 0; return r.json();</p>
+<p class="p1">}</p>
+<p class="p1">async function refresh(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>$('meta').textContent='Refreshing…';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>try{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const spx=await yahoo('%5EGSPC');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const vix=await yahoo('%5EVIX');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const sp=spx.chart.result[0], vx=vix.chart.result[0 0].close;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>data.spot=c ;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>data.prev=sp.meta.chartPreviousClose||sp.meta.previousClose;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const vc=vx.indicators.quote[0].close; data.vix=vc ;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const today=etYMD(new Date());</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const bars=[];</p>
+<p class="p1"><span class="Apple-converted-space">    </span>for(let i=0;i&lt;ts.length;i++){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const d=new Date(ts *1000);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if(etYMD(d)===today){const m=etMin(d); if(m&gt;=570 &amp;&amp; m&lt;960) bars.push({m,close:c });}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>data.bars=bars;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const or=bars.filter(b=&gt;b.m&gt;=570 &amp;&amp; b.m&lt;600);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(or.length){data.orHigh=Math.max(...or.map(b=&gt;b.close)); data.orLow=Math.min(...or.map(b=&gt;b.close));}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>else {data.orHigh=null;data.orLow=null;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>$('meta').textContent='SPX ok · VIX ok · bars '+bars.length;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>render();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}catch(e){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>$('meta').textContent='Refresh failed — enter spot/VIX manually';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">}</p>
+<p class="p1">function size(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const acct=+$('acct').value||100000, risk=+$('risk').value||0.35;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const pair=data.spot? data.spot*(data.vix||18)/100*0.015*2 : 18;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const unit=acct*risk/100;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const qty=Math.max(1, Math.floor(unit/pair));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return {pair, qty, unit};</p>
+<p class="p1">}</p>
+<p class="p1">function render(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const now=etNow(), min=etMin(now);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>$('spot').textContent = data.spot? data.spot.toFixed(2) : '—';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>$('vix').textContent = data.vix? data.vix.toFixed(1) : '—';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>$('or').textContent = data.orHigh? (data.orLow.toFixed(0)+' / '+data.orHigh.toFixed(0)) : '—';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const gap = data.spot&amp;&amp;data.prev? (data.spot-data.prev)/data.prev*100 : null;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>$('gap').textContent = gap!=null? gap.toFixed(2)+'%' : '—';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const sz=size();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>$('debit').textContent='$'+sz.pair.toFixed(2);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>$('qty').textContent=sz.qty;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const checks= ,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>['VIX &lt; 24', data.vix!=null &amp;&amp; data.vix&lt;24],</p>
+<p class="p1"><span class="Apple-converted-space">    </span>['Gap &lt; 0.80%', gap!=null &amp;&amp; Math.abs(gap)&lt;0.80], ,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>['Before 1:00 PM ET', min&lt;780]</p>
+<p class="p1"><span class="Apple-converted-space">  </span>];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let html='';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>checks.forEach(( )=&gt; html+='&lt;div class="chk"&gt;&lt;b&gt;'+(v?'&lt;span class="ok"&gt;YES&lt;/span&gt;':'&lt;span class="no"&gt;NO&lt;/span&gt;')+'&lt;/b&gt;'+k+'&lt;/div&gt;');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>$('stack').innerHTML=html;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const allPass = checks.every(c=&gt;c[1]);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const lock=$('lock'), buys=$('buys'), reason=$('reason'), ticket=$('ticket');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(allPass){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>lock.textContent='PLACE STRADDLE'; lock.className='pill g';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>buys.classList.remove('hidden');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>reason.textContent='Single exit: sell both legs at $23.50. Pair stop ≤ 50% debit. Flatten 2:45 ET.';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>ticket.classList.add('hidden');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}else{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>lock.textContent='WAIT'; lock.className='pill a';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>buys.classList.add('hidden'); ticket.classList.add('hidden');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const fail=checks.filter(c=&gt;!c[1 0]);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>reason.textContent = fail.length? 'Blocked: '+fail.join(' · ') : 'Waiting for 9:45 ET…';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">}</p>
+<p class="p1">function makeTicket(side){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const sz=size();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const spot=data.spot||0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const strike=Math.round(spot/5)*5;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const t='EXECUTE STRADDLE\nBuy '+sz.qty+' SPX 0DTE '+strike+' CALL\nBuy '+sz.qty+' SPX 0DTE '+strike+' PUT\nPair debit ~$'+sz.pair.toFixed(2)+'\nSINGLE EXIT: sell BOTH legs as ONE order at $23.50\nPair stop: sell both if combined ≤ 50% of debit\nFlatten 2:45 ET if still open\nSide bias: '+side;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>ticket.textContent=t; ticket.classList.remove('hidden');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>try{navigator.clipboard.writeText(t);}catch(e)</p>
+<p class="p1">}</p>
+<p class="p1">$('buyCall').onclick=()=&gt;makeTicket('CALL');</p>
+<p class="p1">$('buyPut').onclick=()=&gt;makeTicket('PUT');</p>
+<p class="p1">$('refresh').onclick=refresh;</p>
+<p class="p1">$('event').onchange=render;</p>
+<p class="p1">$('acct').oninput=render; $('risk').oninput=render;</p>
+<p class="p1">setInterval(()=&gt;{ if(etMin(etNow())&gt;=570 &amp;&amp; etMin(etNow())&lt;780) render(); }, 30000);</p>
+<p class="p1">refresh();</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
 </body>
 </html>
