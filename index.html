@@ -9,7 +9,7 @@
     :root {
       --bg:#0F0A14; --card:#1A1224; --text:#F3EEF8; --muted:#9B8FB0;
       --line:#2A2038; --accent:#38BDF8; --green:#059669; --gray:#4B5563;
-      --call:#7F1D1D; --put:#064E3B;
+      --call:#059669; --put:#B91C1C;
     }
     * { box-sizing: border-box; }
     body {
@@ -88,6 +88,7 @@
       <div class="why" id="putWhy">OR low</div>
     </div>
   </div>
+  <div class="plan" id="holdLine" style="margin:0 0 5px;text-align:center;font-weight:800;font-size:14px">Hold: — / 10 min</div>
 
   <div class="actions">
     <button type="button" class="lock off" id="lockBtn" onclick="onLockTap()">WAIT<span class="tiny" id="lockWhy">Conditions not met.</span></button>
@@ -201,6 +202,8 @@ const rnd5 = x => Math.round(x / 5) * 5;
 let mode = "naked";
 let ready = false;
 let lastTicket = "";
+let holdSide = null;   // "CALL" | "PUT" | null
+let holdStartMs = null;
 
 function ptNowMinutes() {
   const s = new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", hour12: false, hour: "2-digit", minute: "2-digit" });
@@ -264,10 +267,41 @@ function paint() {
     $("putWhy").textContent = "Need OR low";
   }
 
+  // OR hold clock: minutes outside the box toward 10
+  let sideNow = null;
+  if (spot != null && orH != null && orL != null) {
+    if (spot > orH && !(spot < orL)) sideNow = "CALL";
+    else if (spot < orL) sideNow = "PUT";
+  }
+  if (!sideNow || (holdSide && sideNow !== holdSide)) {
+    holdSide = sideNow;
+    holdStartMs = sideNow ? Date.now() : null;
+  } else if (sideNow && !holdStartMs) {
+    holdSide = sideNow;
+    holdStartMs = Date.now();
+  }
+  const heldMin = holdStartMs ? Math.floor((Date.now() - holdStartMs) / 60000) : 0;
+  const holdEl = $("holdLine");
+  if (!orH || !orL) {
+    holdEl.textContent = "Hold: need OR first";
+  } else if (!sideNow) {
+    holdEl.textContent = "Hold: 0 / 10 min (inside OR)";
+  } else {
+    const label = sideNow === "CALL" ? "above " + Math.round(orH) : "below " + Math.round(orL);
+    holdEl.textContent = "Hold: " + heldMin + " / 10 min " + label + (heldMin >= 10 ? " · READY" : "");
+  }
+  // auto-suggest held10 toggle when clock reaches 10
+  if (heldMin >= 10 && sideNow && mode === "naked") {
+    if (sideNow === "CALL") { $("above").value = "y"; $("below").value = "n"; }
+    if (sideNow === "PUT") { $("below").value = "y"; $("above").value = "n"; }
+    $("held10").value = "y";
+  }
+
   ready = false;
   lastTicket = "";
   const lock = $("lockBtn");
   const why = $("lockWhy");
+  lock.style.background = "";
   $("copyBtn").disabled = true;
 
   const commonSkip = [];
@@ -362,6 +396,7 @@ function paint() {
   const k = side === "CALL" ? rnd5((spot || orH) + pts) : rnd5((spot || orL) - pts);
   ready = true;
   lock.className = "lock on";
+  lock.style.background = side === "CALL" ? "#059669" : "#B91C1C";
   lock.childNodes[0].textContent = side === "CALL" ? "PLACE CALL" : "PLACE PUT";
   why.textContent =
     "BUY " + k + " " + side + "\n" +
@@ -469,6 +504,9 @@ async function autoRefresh() {
     el.addEventListener("change", paint);
   });
 setMode("naked");
+setInterval(() => {
+  if (holdStartMs && mode === "naked") paint();
+}, 15000);
 </script>
 </body>
 </html>
