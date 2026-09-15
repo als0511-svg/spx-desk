@@ -1,181 +1,164 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2113.4">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; color: #000000; -webkit-text-stroke: #000000}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; color: #000000; -webkit-text-stroke: #000000; min-height: 14.0px}
-    span.s1 {font-kerning: none}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>SPX Desk</title>
+<style>
+  :root{--bg:#0b0f14;--card:#121821;--line:#243041;--txt:#e7eef7;--dim:#8aa0b5;--green:#22c55e;--red:#ef4444;--amber:#f59e0b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 -apple-system,Segoe UI,Roboto,sans-serif;padding:12px}
+  h1{font-size:18px;margin:0 0 8px}
+  .sub{color:var(--dim);font-size:12px;margin-bottom:10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+  .row{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:6px 0}
+  .k{color:var(--dim)} .v{font-weight:700}
+  .stack{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+  .chk{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px}
+  .chk b{display:block}
+  .ok{color:var(--green)} .no{color:var(--red)}
+  button{width:100%;border:0;border-radius:10px;padding:14px;font-size:16px;font-weight:800;color:#04110a;background:var(--green);margin-top:8px}
+  button.red{background:var(--red);color:#1a0505}
+  button.gray{background:#2a3442;color:#9fb0c4}
+  .btn2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .btn2 button{margin:0}
+  .meta{font-size:12px;color:var(--dim);margin-top:6px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+  .pill.g{background:rgba(34,197,94,.15);color:var(--green)}
+  .pill.a{background:rgba(245,158,11,.15);color:var(--amber)}
+  input,select{background:#0b0f14;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px;width:100%}
+  .small{font-size:12px;color:var(--dim)}
+  .ticket{white-space:pre-wrap;font:12px/1.4 ui-monospace,monospace;background:#0b0f14;border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px}
+  .hidden{display:none}
+</style>
 </head>
 <body>
-<p class="p1"><span class="s1">&lt;!DOCTYPE html&gt;</span></p>
-<p class="p1"><span class="s1">&lt;html lang="en"&gt;</span></p>
-<p class="p1"><span class="s1">&lt;head&gt;</span></p>
-<p class="p1"><span class="s1">&lt;meta charset="UTF-8"&gt;</span></p>
-<p class="p1"><span class="s1">&lt;meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"&gt;</span></p>
-<p class="p1"><span class="s1">&lt;title&gt;SPX Desk&lt;/title&gt;</span></p>
-<p class="p1"><span class="s1">&lt;style&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>:root{--bg:#0b0f14;--card:#121821;--line:#243041;--txt:#e7eef7;--dim:#8aa0b5;--green:#22c55e;--red:#ef4444;--amber:#f59e0b}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>*{box-sizing:border-box}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 -apple-system,Segoe UI,Roboto,sans-serif;padding:12px}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>h1{font-size:18px;margin:0 0 8px}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.sub{color:var(--dim);font-size:12px;margin-bottom:10px}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.row{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:6px 0}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.k{color:var(--dim)} .v{font-weight:700}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.stack{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.chk{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.chk b{display:block}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.ok{color:var(--green)} .no{color:var(--red)}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>button{width:100%;border:0;border-radius:10px;padding:14px;font-size:16px;font-weight:800;color:#04110a;background:var(--green);margin-top:8px}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>button.red{background:var(--red);color:#1a0505}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>button.gray{background:#2a3442;color:#9fb0c4}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.btn2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.btn2 button{margin:0}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.meta{font-size:12px;color:var(--dim);margin-top:6px}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.pill.g{background:rgba(34,197,94,.15);color:var(--green)}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.pill.a{background:rgba(245,158,11,.15);color:var(--amber)}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>input,select{background:#0b0f14;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px;width:100%}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.small{font-size:12px;color:var(--dim)}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.ticket{white-space:pre-wrap;font:12px/1.4 ui-monospace,monospace;background:#0b0f14;border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.hidden{display:none}</span></p>
-<p class="p1"><span class="s1">&lt;/style&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/head&gt;</span></p>
-<p class="p1"><span class="s1">&lt;body&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;h1&gt;SPX 0DTE Desk&lt;/h1&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="sub"&gt;ATM straddle · arm 9:45 ET · single exit $23.50 · no scaling&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="card"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Book&lt;/span&gt;&lt;b&gt;ATM STRADDLE&lt;/b&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Spot&lt;/span&gt;&lt;span class="v" id="spot"&gt;—&lt;/span&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;OR 9:30–10:00&lt;/span&gt;&lt;span class="v" id="or"&gt;—&lt;/span&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;VIX&lt;/span&gt;&lt;span class="v" id="vix"&gt;—&lt;/span&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Gap %&lt;/span&gt;&lt;span class="v" id="gap"&gt;—&lt;/span&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Est. pair debit&lt;/span&gt;&lt;span class="v" id="debit"&gt;—&lt;/span&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Contracts / side&lt;/span&gt;&lt;span class="v" id="qty"&gt;1&lt;/span&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Account $&lt;/span&gt;&lt;input id="acct" type="number" value="100000" style="width:120px"&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Risk %&lt;/span&gt;&lt;input id="risk" type="number" value="0.35" step="0.05" style="width:120px"&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Event day&lt;/span&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;select id="event" style="width:120px"&gt;&lt;option&gt;No&lt;/option&gt;&lt;option&gt;Yes&lt;/option&gt;&lt;/select&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;button id="refresh" class="gray" style="background:#2a3442;color:#9fb0c4"&gt;MANUAL REFRESH&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="meta" id="meta"&gt;Waiting for refresh…&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="card"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;&lt;span class="k"&gt;Lock&lt;/span&gt;&lt;span id="lock" class="pill a"&gt;WAIT&lt;/span&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="stack" id="stack"&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="btn2 hidden" id="buys"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;button id="buyCall"&gt;BUY CALL&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;button id="buyPut" class="red"&gt;BUY PUT&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="ticket hidden" id="ticket"&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="meta" id="reason"&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="card small"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>Entry 9:45 ET. Skip: event / VIX≥24 / gap≥0.80% / before 9:45 / after 1:00 PM ET.&lt;br&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>Exit: sell &lt;b&gt;both legs as one order at $23.50&lt;/b&gt;. Pair stop if combined ≤ 50% of debit. Flatten 2:45 ET.</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">&lt;script&gt;</span></p>
-<p class="p1"><span class="s1">const ET='America/New_York';</span></p>
-<p class="p1"><span class="s1">const $=id=&gt;document.getElementById(id);</span></p>
-<p class="p1"><span class="s1">let data={spot:null,prev:null,vix:null,orHigh:null,orLow:null,bars:[]};</span></p>
-<p class="p1"><span class="s1">function etNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:ET}));}</span></p>
-<p class="p1"><span class="s1">function etYMD(d){return d.toLocaleDateString('en-CA',{timeZone:ET});}</span></p>
-<p class="p1"><span class="s1">function etMin(d){const t=d.toLocaleTimeString('en-US',{timeZone:ET,hour12:false});const p=t.split(':');return +p[0 1];}</span></p>
-<p class="p1"><span class="s1">async function yahoo(sym){</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const u='https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'?interval=1m&amp;range=5d';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const r=await fetch(u); if(!r.ok) throw 0; return r.json();</span></p>
-<p class="p1"><span class="s1">}</span></p>
-<p class="p1"><span class="s1">async function refresh(){</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('meta').textContent='Refreshing…';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>try{</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const spx=await yahoo('%5EGSPC');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const vix=await yahoo('%5EVIX');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const sp=spx.chart.result[0], vx=vix.chart.result[0 0].close;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>data.spot=c ;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>data.prev=sp.meta.chartPreviousClose||sp.meta.previousClose;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const vc=vx.indicators.quote[0].close; data.vix=vc ;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const today=etYMD(new Date());</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const bars=[];</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>for(let i=0;i&lt;ts.length;i++){</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const d=new Date(ts *1000);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>if(etYMD(d)===today){const m=etMin(d); if(m&gt;=570 &amp;&amp; m&lt;960) bars.push({m,close:c });}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>data.bars=bars;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const or=bars.filter(b=&gt;b.m&gt;=570 &amp;&amp; b.m&lt;600);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if(or.length){data.orHigh=Math.max(...or.map(b=&gt;b.close)); data.orLow=Math.min(...or.map(b=&gt;b.close));}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>else {data.orHigh=null;data.orLow=null;}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>$('meta').textContent='SPX ok · VIX ok · bars '+bars.length;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>render();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}catch(e){</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>$('meta').textContent='Refresh failed — enter spot/VIX manually';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
-<p class="p1"><span class="s1">}</span></p>
-<p class="p1"><span class="s1">function size(){</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const acct=+$('acct').value||100000, risk=+$('risk').value||0.35;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const pair=data.spot? data.spot*(data.vix||18)/100*0.015*2 : 18;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const unit=acct*risk/100;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const qty=Math.max(1, Math.floor(unit/pair));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>return {pair, qty, unit};</span></p>
-<p class="p1"><span class="s1">}</span></p>
-<p class="p1"><span class="s1">function render(){</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const now=etNow(), min=etMin(now);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('spot').textContent = data.spot? data.spot.toFixed(2) : '—';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('vix').textContent = data.vix? data.vix.toFixed(1) : '—';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('or').textContent = data.orHigh? (data.orLow.toFixed(0)+' / '+data.orHigh.toFixed(0)) : '—';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const gap = data.spot&amp;&amp;data.prev? (data.spot-data.prev)/data.prev*100 : null;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('gap').textContent = gap!=null? gap.toFixed(2)+'%' : '—';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const sz=size();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('debit').textContent='$'+sz.pair.toFixed(2);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('qty').textContent=sz.qty;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const checks= ,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>['VIX &lt; 24', data.vix!=null &amp;&amp; data.vix&lt;24],</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>['Gap &lt; 0.80%', gap!=null &amp;&amp; Math.abs(gap)&lt;0.80], ,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>['Before 1:00 PM ET', min&lt;780]</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>];</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>let html='';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>checks.forEach(( )=&gt; html+='&lt;div class="chk"&gt;&lt;b&gt;'+(v?'&lt;span class="ok"&gt;YES&lt;/span&gt;':'&lt;span class="no"&gt;NO&lt;/span&gt;')+'&lt;/b&gt;'+k+'&lt;/div&gt;');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('stack').innerHTML=html;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const allPass = checks.every(c=&gt;c[1]);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const lock=$('lock'), buys=$('buys'), reason=$('reason'), ticket=$('ticket');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(allPass){</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>lock.textContent='PLACE STRADDLE'; lock.className='pill g';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>buys.classList.remove('hidden');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>reason.textContent='Single exit: sell both legs at $23.50. Pair stop ≤ 50% debit. Flatten 2:45 ET.';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>ticket.classList.add('hidden');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}else{</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>lock.textContent='WAIT'; lock.className='pill a';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>buys.classList.add('hidden'); ticket.classList.add('hidden');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const fail=checks.filter(c=&gt;!c[1 0]);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>reason.textContent = fail.length? 'Blocked: '+fail.join(' · ') : 'Waiting for 9:45 ET…';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
-<p class="p1"><span class="s1">}</span></p>
-<p class="p1"><span class="s1">function makeTicket(side){</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const sz=size();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const spot=data.spot||0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const strike=Math.round(spot/5)*5;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const t='EXECUTE STRADDLE\nBuy '+sz.qty+' SPX 0DTE '+strike+' CALL\nBuy '+sz.qty+' SPX 0DTE '+strike+' PUT\nPair debit ~$'+sz.pair.toFixed(2)+'\nSINGLE EXIT: sell BOTH legs as ONE order at $23.50\nPair stop: sell both if combined ≤ 50% of debit\nFlatten 2:45 ET if still open\nSide bias: '+side;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>ticket.textContent=t; ticket.classList.remove('hidden');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>try{navigator.clipboard.writeText(t);}catch(e)</span></p>
-<p class="p1"><span class="s1">}</span></p>
-<p class="p1"><span class="s1">$('buyCall').onclick=()=&gt;makeTicket('CALL');</span></p>
-<p class="p1"><span class="s1">$('buyPut').onclick=()=&gt;makeTicket('PUT');</span></p>
-<p class="p1"><span class="s1">$('refresh').onclick=refresh;</span></p>
-<p class="p1"><span class="s1">$('event').onchange=render;</span></p>
-<p class="p1"><span class="s1">$('acct').oninput=render; $('risk').oninput=render;</span></p>
-<p class="p1"><span class="s1">setInterval(()=&gt;{ if(etMin(etNow())&gt;=570 &amp;&amp; etMin(etNow())&lt;780) render(); }, 30000);</span></p>
-<p class="p1"><span class="s1">refresh();</span></p>
-<p class="p1"><span class="s1">&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/body&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/html&gt;</span></p>
+  <h1>SPX 0DTE Desk</h1>
+  <div class="sub">ATM straddle · arm 9:45 ET · single exit $23.50 · no scaling</div>
+ 
+  <div class="card">
+    <div class="row"><span class="k">Book</span><b>ATM STRADDLE</b></div>
+    <div class="row"><span class="k">Spot</span><span class="v" id="spot">—</span></div>
+    <div class="row"><span class="k">OR 9:30–10:00</span><span class="v" id="or">—</span></div>
+    <div class="row"><span class="k">VIX</span><span class="v" id="vix">—</span></div>
+    <div class="row"><span class="k">Gap %</span><span class="v" id="gap">—</span></div>
+    <div class="row"><span class="k">Est. pair debit</span><span class="v" id="debit">—</span></div>
+    <div class="row"><span class="k">Contracts / side</span><span class="v" id="qty">1</span></div>
+    <div class="row"><span class="k">Account $</span><input id="acct" type="number" value="100000" style="width:120px"></div>
+    <div class="row"><span class="k">Risk %</span><input id="risk" type="number" value="0.35" step="0.05" style="width:120px"></div>
+    <div class="row"><span class="k">Event day</span>
+      <select id="event" style="width:120px"><option>No</option><option>Yes</option></select>
+    </div>
+    <button id="refresh" class="gray" style="background:#2a3442;color:#9fb0c4">MANUAL REFRESH</button>
+    <div class="meta" id="meta">Waiting for refresh…</div>
+  </div>
+ 
+  <div class="card">
+    <div class="row"><span class="k">Lock</span><span id="lock" class="pill a">WAIT</span></div>
+    <div class="stack" id="stack"></div>
+    <div class="btn2 hidden" id="buys">
+      <button id="buyCall">BUY CALL</button>
+      <button id="buyPut" class="red">BUY PUT</button>
+    </div>
+    <div class="ticket hidden" id="ticket"></div>
+    <div class="meta" id="reason"></div>
+  </div>
+ 
+  <div class="card small">
+    Entry 9:45 ET. Skip: event / VIX≥24 / gap≥0.80% / before 9:45 / after 1:00 PM ET.<br>
+    Exit: sell <b>both legs as one order at $23.50</b>. Pair stop if combined ≤ 50% of debit. Flatten 2:45 ET.
+  </div>
+ 
+<script>
+const ET='America/New_York';
+const $=id=>document.getElementById(id);
+let data={spot:null,prev:null,vix:null,orHigh:null,orLow:null,bars:[]};
+function etNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:ET}));}
+function etYMD(d){return d.toLocaleDateString('en-CA',{timeZone:ET});}
+function etMin(d){const t=d.toLocaleTimeString('en-US',{timeZone:ET,hour12:false});const p=t.split(':');return +p[0 1];}
+async function yahoo(sym){
+  const u='https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'?interval=1m&range=5d';
+  const r=await fetch(u); if(!r.ok) throw 0; return r.json();
+}
+async function refresh(){
+  $('meta').textContent='Refreshing…';
+  try{
+    const spx=await yahoo('%5EGSPC');
+    const vix=await yahoo('%5EVIX');
+    const sp=spx.chart.result[0], vx=vix.chart.result[0 0].close;
+    data.spot=c ;
+    data.prev=sp.meta.chartPreviousClose||sp.meta.previousClose;
+    const vc=vx.indicators.quote[0].close; data.vix=vc ;
+    const today=etYMD(new Date());
+    const bars=[];
+    for(let i=0;i<ts.length;i++){
+      const d=new Date(ts *1000);
+      if(etYMD(d)===today){const m=etMin(d); if(m>=570 && m<960) bars.push({m,close:c });}
+    }
+    data.bars=bars;
+    const or=bars.filter(b=>b.m>=570 && b.m<600);
+    if(or.length){data.orHigh=Math.max(...or.map(b=>b.close)); data.orLow=Math.min(...or.map(b=>b.close));}
+    else {data.orHigh=null;data.orLow=null;}
+    $('meta').textContent='SPX ok · VIX ok · bars '+bars.length;
+    render();
+  }catch(e){
+    $('meta').textContent='Refresh failed — enter spot/VIX manually';
+  }
+}
+function size(){
+  const acct=+$('acct').value||100000, risk=+$('risk').value||0.35;
+  const pair=data.spot? data.spot*(data.vix||18)/100*0.015*2 : 18;
+  const unit=acct*risk/100;
+  const qty=Math.max(1, Math.floor(unit/pair));
+  return {pair, qty, unit};
+}
+function render(){
+  const now=etNow(), min=etMin(now);
+  $('spot').textContent = data.spot? data.spot.toFixed(2) : '—';
+  $('vix').textContent = data.vix? data.vix.toFixed(1) : '—';
+  $('or').textContent = data.orHigh? (data.orLow.toFixed(0)+' / '+data.orHigh.toFixed(0)) : '—';
+  const gap = data.spot&&data.prev? (data.spot-data.prev)/data.prev*100 : null;
+  $('gap').textContent = gap!=null? gap.toFixed(2)+'%' : '—';
+  const sz=size();
+  $('debit').textContent='$'+sz.pair.toFixed(2);
+  $('qty').textContent=sz.qty;
+  const checks= ,
+    ['VIX < 24', data.vix!=null && data.vix<24],
+    ['Gap < 0.80%', gap!=null && Math.abs(gap)<0.80], ,
+    ['Before 1:00 PM ET', min<780]
+  ];
+  let html='';
+  checks.forEach(( )=> html+='<div class="chk"><b>'+(v?'<span class="ok">YES</span>':'<span class="no">NO</span>')+'</b>'+k+'</div>');
+  $('stack').innerHTML=html;
+  const allPass = checks.every(c=>c[1]);
+  const lock=$('lock'), buys=$('buys'), reason=$('reason'), ticket=$('ticket');
+  if(allPass){
+    lock.textContent='PLACE STRADDLE'; lock.className='pill g';
+    buys.classList.remove('hidden');
+    reason.textContent='Single exit: sell both legs at $23.50. Pair stop ≤ 50% debit. Flatten 2:45 ET.';
+    ticket.classList.add('hidden');
+  }else{
+    lock.textContent='WAIT'; lock.className='pill a';
+    buys.classList.add('hidden'); ticket.classList.add('hidden');
+    const fail=checks.filter(c=>!c[1 0]);
+    reason.textContent = fail.length? 'Blocked: '+fail.join(' · ') : 'Waiting for 9:45 ET…';
+  }
+}
+function makeTicket(side){
+  const sz=size();
+  const spot=data.spot||0;
+  const strike=Math.round(spot/5)*5;
+  const t='EXECUTE STRADDLE\nBuy '+sz.qty+' SPX 0DTE '+strike+' CALL\nBuy '+sz.qty+' SPX 0DTE '+strike+' PUT\nPair debit ~$'+sz.pair.toFixed(2)+'\nSINGLE EXIT: sell BOTH legs as ONE order at $23.50\nPair stop: sell both if combined ≤ 50% of debit\nFlatten 2:45 ET if still open\nSide bias: '+side;
+  ticket.textContent=t; ticket.classList.remove('hidden');
+  try{navigator.clipboard.writeText(t);}catch(e)
+}
+$('buyCall').onclick=()=>makeTicket('CALL');
+$('buyPut').onclick=()=>makeTicket('PUT');
+$('refresh').onclick=refresh;
+$('event').onchange=render;
+$('acct').oninput=render; $('risk').oninput=render;
+setInterval(()=>{ if(etMin(etNow())>=570 && etMin(etNow())<780) render(); }, 30000);
+refresh();
+</script>
 </body>
 </html>
