@@ -96,7 +96,10 @@
   </div>
 
   <button class="btn" type="button" id="refBtn" onclick="autoRefresh()">MANUAL REFRESH</button>
-  <div class="meta" id="meta">GEX + Yahoo via your Worker when possible.</div>
+  <div class="meta" id="meta">Tap refresh — status shows GEX + Yahoo values when connected.</div>
+  <div class="plan" id="connBox" style="margin:4px 0 5px;font-size:11px">
+    GEX: not checked yet<br>Yahoo: not checked yet
+  </div>
 
   <section>
     <h2>Board</h2>
@@ -391,13 +394,29 @@ async function proxyFetch(url) {
 async function autoRefresh() {
   $("refBtn").disabled = true;
   $("meta").textContent = "Refreshing…";
+  $("connBox").textContent = "Checking GEX + Yahoo…";
+  let gexLine = "GEX: fail";
+  let yhooLine = "Yahoo: fail";
   const bits = [];
   try {
     const g = await proxyFetch(GEX);
     const j = await g.json();
     if (j.spot) $("spot").value = (+j.spot).toFixed(2);
+    const date = j.date || j.as_of || j.timestamp || "?";
+    const net = j.net_gex_dollars != null ? j.net_gex_dollars : (j.net_gex != null ? j.net_gex : null);
+    let netTxt = "";
+    if (net != null) {
+      const b = (+net) / 1e9;
+      netTxt = " · " + (b >= 0 ? "+" : "") + b.toFixed(1) + "B";
+    }
+    const flip = j.zero_gamma_flip != null ? Math.round(+j.zero_gamma_flip) : (j.flip != null ? Math.round(+j.flip) : null);
+    const wall = j.call_wall != null ? Math.round(+j.call_wall) : null;
+    gexLine = "GEX ok · " + date + netTxt + (flip != null ? " · flip " + flip : "") + (wall != null ? " · call wall " + wall : "");
     bits.push("GEX ok");
-  } catch (e) { bits.push("GEX fail"); }
+  } catch (e) {
+    gexLine = "GEX fail — Worker or feed blocked";
+    bits.push("GEX fail");
+  }
   try {
     const y = await proxyFetch("https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1m&range=1d");
     const j = await y.json();
@@ -419,15 +438,25 @@ async function autoRefresh() {
     }
     if (orH != null) $("orH").value = orH.toFixed(2);
     if (orL != null) $("orL").value = orL.toFixed(2);
+    const sp = meta.regularMarketPrice != null ? (+meta.regularMarketPrice).toFixed(2) : "—";
+    const orTxt = (orH != null && orL != null) ? (" · OR " + Math.round(orH) + "/" + Math.round(orL)) : " · OR not ready";
+    yhooLine = "Yahoo ok · SPX " + sp + orTxt;
     bits.push("Yahoo ok");
-  } catch (e) { bits.push("Yahoo fail — type Spot"); }
+  } catch (e) {
+    yhooLine = "Yahoo fail — type Spot / OR manually";
+    bits.push("Yahoo fail");
+  }
   try {
     const v = await proxyFetch("https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=5d");
     const j = await v.json();
     const px = j.chart.result[0].meta.regularMarketPrice;
-    if (px) $("vix").value = px.toFixed(2);
+    if (px) {
+      $("vix").value = px.toFixed(2);
+      yhooLine += " · VIX " + (+px).toFixed(2);
+    }
   } catch (e) {}
-  $("meta").textContent = stamp() + " · " + bits.join(" · ");
+  $("connBox").innerHTML = gexLine + "<br>" + yhooLine;
+  $("meta").textContent = stamp() + " PT · " + bits.join(" · ");
   $("refBtn").disabled = false;
   paint();
 }
