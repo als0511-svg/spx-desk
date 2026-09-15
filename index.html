@@ -95,7 +95,7 @@
 <body>
   <div class="top">
     <h1>SPX Naked 0DTE Desk</h1>
-    <p>Long call or long put only. Short naked SPX is a different product and is not in this app. A 0DTE long can go to $0 the same afternoon — treat the debit as the whole bet.</p>
+    <p>Longs only. Two books: OR-break (one side) or straddle (both sides after the first 15 minutes). Short naked SPX is never in this app. A 0DTE long can go to $0 the same afternoon — treat the debit as the whole bet.</p>
   </div>
 
   <div class="watch">
@@ -131,6 +131,10 @@
     <button type="button" class="refresh-btn" id="autoBtn" onclick="autoRefresh()">MANUAL REFRESH</button>
     <div class="refresh-meta" id="autoMeta">Pulls GEX + SPX + ES + VIX. After 10:00 ET also fills OR high/low from 1-minute bars.</div>
   </div>
+  <div class="row" style="margin:0 0 10px">
+    <button type="button" class="ghost" id="modeBreak" onclick="setBookMode('break')">OR BREAK</button>
+    <button type="button" class="ghost" id="modeStrad" onclick="setBookMode('straddle')">STRADDLE</button>
+  </div>
   <button type="button" class="lock wait" id="lockBtn">WAIT<span class="tiny" id="lockWhy">Conditions not met. Do not place an order.</span></button>
   <div class="exec" id="execRow">
     <button type="button" class="go-call" id="execCall" onclick="executeSide('CALL')">BUY CALL (SPX)</button>
@@ -142,12 +146,12 @@
     <h2>Playbook — when to click buy</h2>
     <ol class="steps">
       <li><b>6:10 AM PDT</b> — Manual Refresh. No order. Draw the two watch numbers.</li>
-      <li><b>6:30–7:00</b> — Let the 9:30–10:00 ET range print. Still WAIT.</li>
-      <li><b>7:00–8:30 AM PDT</b> — Manual Refresh. OR high = call line. OR low = put line. Last look 8:30. After 8:30, no new trade.</li>
-      <li><b>PLACE CALL</b> only if price holds <b>above OR high for 10 minutes</b> before 8:30 AM PDT, no whipsaw, not an event day, VIX under 24.</li>
-      <li><b>PLACE PUT</b> only if price holds <b>below OR low for 10 minutes</b> before 8:30 AM PDT, same filters.</li>
-      <li>If both sides of the range get tagged, or the hold fails — stay on <b>WAIT</b>. Flat is a position.</li>
-      <li><b>8:30 AM PDT credit (optional):</b> only if still <b>inside</b> the OR, no event, VIX under 24. Sell a <b>15-wide defined-risk</b> credit — never naked short. Take <b>75%</b> of the credit. Stop at <b>2× credit</b> or if price leaves the OR.</li>
+      <li><b>6:30–6:45</b> — First 15 minutes after the cash open. Still WAIT. Refresh starts filling 1-minute bars.</li>
+      <li><b>OR BREAK book:</b> after 10:00 ET, buy the call only if the last 10 minutes stayed above OR high. Buy the put only if the last 10 minutes stayed below OR low. App now marks that hold from the 1-minute bars — you do not have to flip the switch by hand.</li>
+      <li><b>STRADDLE book:</b> after 9:45 ET (15 min wait), buy the ATM call <b>and</b> the ATM put. No OR-hold required. Last new entry 1:00 PM ET.</li>
+      <li><b>Straddle math:</b> 2× on the live leg ≈ scratch if the other side dies. 3× on the live leg (+200%) is the actual win. Combined debit is one risk unit.</li>
+      <li>Event day, VIX ≥ 24, or gap ≥ 0.80% — both books stay on WAIT. Naked short is never allowed.</li>
+      <li><b>8:30 AM PDT credit (optional):</b> only if the long did not fire <b>and</b> price is still inside the OR. Defined-risk 15-wide only. Never on the same morning as a straddle.</li>
     </ol>
   </section>
 
@@ -207,8 +211,9 @@
       <label class="switch"><input id="below" type="checkbox" /><span class="slider"></span></label></div>
     <div class="toggle"><span>Whipsaw / both sides tagged</span>
       <label class="switch"><input id="whip" type="checkbox" /><span class="slider"></span></label></div>
-    <div class="toggle"><span>Held 10 minutes outside OR</span>
+    <div class="toggle"><span>Held 10 minutes outside OR (auto from 1-min bars)</span>
       <label class="switch"><input id="held10" type="checkbox" /><span class="slider"></span></label></div>
+    <p class="hint" id="holdStatus">Hold is computed on Manual Refresh after 10:00 ET. You can still override the switch.</p>
   </section>
 
   <section>
@@ -294,6 +299,7 @@
           <option value="WAIT">WAIT — no trade</option>
           <option value="CALL">Bought CALL</option>
           <option value="PUT">Bought PUT</option>
+          <option value="STRADDLE">Bought STRADDLE</option>
         </select>
       </div>
     </div>
@@ -340,6 +346,21 @@ const num = id => { const v = parseFloat($(id).value); return Number.isFinite(v)
 const rnd5 = x => Math.round(x / 5) * 5;
 let lastChecked = "";
 let lastPxTag = "";
+let bookMode = localStorage.getItem("spxnaked_mode") || "straddle";
+function setBookMode(m) {
+  bookMode = m === "straddle" ? "straddle" : "break";
+  try { localStorage.setItem("spxnaked_mode", bookMode); } catch (e) {}
+  paintModeBtns();
+  render();
+}
+function paintModeBtns() {
+  const b = $("modeBreak"), s = $("modeStrad");
+  if (!b || !s) return;
+  b.style.background = bookMode === "break" ? "var(--accent)" : "#4A2C4E";
+  b.style.color = bookMode === "break" ? "#2A1020" : "var(--ink)";
+  s.style.background = bookMode === "straddle" ? "var(--accent)" : "#4A2C4E";
+  s.style.color = bookMode === "straddle" ? "#2A1020" : "var(--ink)";
+}
 function stamp() {
   lastChecked = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   return lastChecked;
@@ -456,6 +477,25 @@ function paintLive3(sess, spot) {
   }
 }
 
+function holdOutside(chart, orH, orL, needMin) {
+  needMin = needMin || 10;
+  if (!chart || orH == null || orL == null) return { call: false, put: false, minsCall: 0, minsPut: 0 };
+  let runCall = 0, runPut = 0, seen = false;
+  for (let i = chart.ts.length - 1; i >= 0; i--) {
+    const mins = etParts(chart.ts[i]);
+    if (mins < 9 * 60 + 30 || mins >= 16 * 60) continue;
+    const h = chart.high[i], l = chart.low[i], c = chart.close[i];
+    const px = c != null ? c : (h != null && l != null ? (h + l) / 2 : null);
+    if (px == null) continue;
+    seen = true;
+    if (l != null && l > orH) { runCall++; runPut = 0; }
+    else if (h != null && h < orL) { runPut++; runCall = 0; }
+    else { break; }
+    if (runCall >= needMin || runPut >= needMin) break;
+  }
+  return { call: runCall >= needMin, put: runPut >= needMin, minsCall: runCall, minsPut: runPut, seen };
+}
+
 function openingRange(chart) {
   let hi = -Infinity, lo = Infinity, bars = 0;
   for (let i = 0; i < chart.ts.length; i++) {
@@ -545,7 +585,37 @@ async function autoRefresh() {
           if (px != null) {
             $("above").checked = px > or.high;
             $("below").checked = px < or.low;
+          }
+          const hold = holdOutside(spx, or.high, or.low, 10) || holdOutside(es, or.high, or.low, 10);
+          if (hold.call) {
+            $("held10").checked = true;
+            $("above").checked = true;
+            $("below").checked = false;
             $("whip").checked = false;
+            bits.push("HOLD CALL " + hold.minsCall + "m above " + or.high);
+          } else if (hold.put) {
+            $("held10").checked = true;
+            $("below").checked = true;
+            $("above").checked = false;
+            $("whip").checked = false;
+            bits.push("HOLD PUT " + hold.minsPut + "m below " + or.low);
+          } else {
+            $("held10").checked = false;
+            if (px != null && px > or.high && px < or.low) { /* impossible */ }
+            const taggedHi = (sess && sess.high > or.high + 0.5) || (px != null && px > or.high);
+            const taggedLo = (sess && sess.low < or.low - 0.5) || (px != null && px < or.low);
+            if (sess && sess.high >= or.high && sess.low <= or.low && (sess.high - or.high > 0.25) && (or.low - sess.low > 0.25)) {
+              $("whip").checked = true;
+              bits.push("both sides of OR tagged");
+            } else {
+              bits.push("no 10m hold yet (C" + hold.minsCall + "/P" + hold.minsPut + ")");
+            }
+            if ($("holdStatus")) $("holdStatus").textContent = "No 10-min hold. Call run " + hold.minsCall + "m · put run " + hold.minsPut + "m.";
+          }
+          if ($("holdStatus") && (hold.call || hold.put)) {
+            $("holdStatus").textContent = hold.call
+              ? ("Auto-hold: " + hold.minsCall + " min above OR high " + or.high)
+              : ("Auto-hold: " + hold.minsPut + " min below OR low " + or.low);
           }
           bits.push("OR " + or.high + " / " + or.low + " (" + or.bars + " bars)");
         } else {
@@ -623,8 +693,8 @@ function render() {
   const skip = [];
   if (event) skip.push("event day");
   if (gap != null && Math.abs(gap) >= 0.80) skip.push("gap ≥ 0.80%");
-  if (whip) skip.push("whipsaw");
-  if (orPct != null && orPct < 0.15) skip.push("OR too tight");
+  if (whip && bookMode !== "straddle") skip.push("whipsaw");
+  if (bookMode !== "straddle" && orPct != null && orPct < 0.15) skip.push("OR too tight");
   if (vix != null && vix >= 24) skip.push("VIX ≥ 24 — premium is rich and unstable");
   if (above && below) skip.push("both sides marked");
 
@@ -636,9 +706,24 @@ function render() {
   if (book === "long") { notes.push("Long 0DTE book: pin risk. Don’t hold a winner into the close hoping for more."); conf -= 1; }
   if (spot && magnet && Math.abs(spot - magnet) <= 12) notes.push("On the magnet. Naked direction is a coin flip until OR breaks.");
 
-  if (!skip.length && above && !below && held10) { bias = "CALL"; conf += regime === "negative" ? 3 : 2; }
-  else if (!skip.length && below && !above && held10) { bias = "PUT"; conf += regime === "negative" ? 3 : 2; }
+  const etmNow = etNowMinutes();
+  const afterOpen15 = etmNow >= 9 * 60 + 45;
+  const longsOpen = etmNow >= 9 * 60 + 45 && etmNow < 13 * 60; // last new long 1:00 PM ET
+  const cashHours = etmNow >= 9 * 60 + 30 && etmNow < 16 * 60;
+
+  if (bookMode === "straddle") {
+    if (!skip.length && afterOpen15 && longsOpen) {
+      bias = "STRADDLE";
+      conf += 2;
+      if (orW != null && orPct != null && orPct < 0.25) conf += 1;
+    }
+  } else {
+    if (!skip.length && above && !below && held10 && longsOpen) { bias = "CALL"; conf += regime === "negative" ? 3 : 2; }
+    else if (!skip.length && below && !above && held10 && longsOpen) { bias = "PUT"; conf += regime === "negative" ? 3 : 2; }
+  }
   if (skip.length) { bias = "NONE"; conf = 0; }
+  if (!longsOpen && cashHours && etmNow >= 13 * 60) notes.push("Past 1:00 PM ET — no new long. Manage or flatten only.");
+  if (!afterOpen15 && cashHours) notes.push("First 15 minutes after the open — WAIT.");
 
   const lock = $("lockBtn");
   const why = $("lockWhy");
@@ -669,15 +754,30 @@ function render() {
       const k = rnd5(s - otmPts(delta));
       $("execPut").textContent = "BUY PUT " + k + " (SPX " + Math.round(s) + ")";
     }
+  } else if (bias === "STRADDLE") {
+    lock.className = "lock call";
+    lock.childNodes[0].textContent = "PLACE STRADDLE" + (lastChecked ? " (last checked " + lastChecked + ")" : "");
+    why.textContent = "15-min wait done. Buy ATM call and ATM put. 2× live leg = scratch. 3× live leg = win.";
+    execRow.classList.add("show");
+    $("execCall").style.display = "block";
+    $("execPut").style.display = "block";
+    {
+      const s = spot || 0;
+      const k = rnd5(s);
+      $("execCall").textContent = "BUY CALL " + k + " (ATM)";
+      $("execPut").textContent = "BUY PUT " + k + " (ATM)";
+    }
   } else {
     lock.className = "lock wait";
     lock.childNodes[0].textContent = "WAIT" + (lastChecked ? " (last checked " + lastChecked + ")" : "");
     let reason = "Do not place an order.";
     if (event) reason = "Event day. WAIT.";
-    else if (whip) reason = "Whipsaw. WAIT.";
-    else if (orH == null) reason = "No opening range yet. WAIT.";
-    else if (!held10) reason = "Need a 10-minute hold outside the range. WAIT.";
-    else if (above && below) reason = "Both sides tagged. WAIT.";
+    else if (whip && bookMode !== "straddle") reason = "Whipsaw. WAIT.";
+    else if (bookMode === "break" && orH == null) reason = "No opening range yet. WAIT.";
+    else if (bookMode === "break" && !held10) reason = "Need a 10-minute hold outside the range. Refresh to auto-mark it.";
+    else if (bookMode === "break" && above && below) reason = "Both sides tagged. WAIT.";
+    else if (bookMode === "straddle" && !afterOpen15) reason = "First 15 minutes. WAIT.";
+    else if (!longsOpen) reason = "No new longs after 1:00 PM ET. WAIT.";
     else reason = (skip[0] ? skip[0] + ". " : "") + "WAIT.";
     why.textContent = reason;
   }
@@ -685,8 +785,9 @@ function render() {
   paintPremiumBtn(bias, skip, event, whip, vix, spot, orH, orL, regime);
 
   let grade = "WAIT";
-  if (skip.length || (orH != null && bias === "NONE")) grade = "NO TRADE";
-  else if (orH == null) grade = "PREMARKET";
+  if (skip.length || (bookMode === "break" && orH != null && bias === "NONE")) grade = "NO TRADE";
+  else if (bookMode === "break" && orH == null) grade = "PREMARKET";
+  else if (bias === "STRADDLE") grade = "TAKE STRADDLE";
   else if (conf >= 4) grade = "TAKE CALL/PUT";
   else if (conf >= 2) grade = "SMALL ONLY";
   else if (bias !== "NONE") grade = "MARGINAL — prefer skip";
@@ -696,7 +797,7 @@ function render() {
 
   $("verdict").innerHTML = `<div class="big" style="color:${color}">${grade}</div>
     <div class="sub"><span class="tag ${bias==="CALL"?"bad":bias==="PUT"?"ok":"mid"}">${bias === "NONE" ? "FLAT" : "LONG "+bias}</span>
-    ${skip.length ? skip.join(" · ") : (orPct!=null ? "OR "+orPct.toFixed(2)+"%" : "OR not in")}
+    ${skip.length ? skip.join(" · ") : (orPct!=null ? "OR "+orPct.toFixed(2)+"%" : (bookMode==="straddle" ? "straddle book" : "OR not in"))}
     ${gap!=null ? " · gap "+gap.toFixed(2)+"%" : ""}</div>`;
 
   const maxRisk = acct * (rp / 100);
@@ -712,6 +813,31 @@ function render() {
   let plan = "";
   if (bias === "NONE" || grade === "NO TRADE" || grade.startsWith("MARG")) {
     plan = "<b>No naked option.</b> Sitting out is the high-probability action. " + notes.join(" ");
+  } else if (bias === "STRADDLE") {
+    const s = spot || 7674;
+    const k = rnd5(s);
+    const perLeg = debit;
+    const totalDeb = perLeg * 2;
+    const scratchPx = +(perLeg * 2.00).toFixed(2);
+    const winPx = +(perLeg * 3.00).toFixed(2);
+    const stopPxS = +(perLeg * 0.50).toFixed(2);
+    const maxRiskS = acct * (rp / 100);
+    const qtyS = totalDeb > 0 ? Math.max(0, Math.floor(maxRiskS / (totalDeb * 100))) : 0;
+    $("tp1Px").textContent = perLeg ? ("$" + winPx) : "—";
+    $("tp2Px").textContent = perLeg ? ("$" + stopPxS) : "—";
+    $("tp1Why").textContent = "+200% on live leg · 3× · qty " + (qtyS || "");
+    $("tp2Why").textContent = "−50% per leg · flatten pair if both dying";
+    plan = `<b>BUY STRADDLE</b> · 0DTE SPX ${k} CALL + ${k} PUT · ATM<br>
+    <b>Est debit:</b> $${perLeg.toFixed(2)} per leg · $${totalDeb.toFixed(2)} pair ($${ (totalDeb*100).toFixed(0)} each pair)<br>
+    <b>Contracts:</b> ${qtyS} pair at ${rp}% of $${acct.toLocaleString()}. Combined debit is one risk unit.<br>
+    <b>Enter:</b> after 9:45 ET, last new entry 1:00 PM ET. Limit at mid. Buy both legs together.<br>
+    <b>Scratch:</b> sell the live leg at $${scratchPx} (2× that premium). If the other expires near 0, the pair is about flat.<br>
+    <b>Target:</b> sell the live leg at $${winPx} (3× / +200%). That is the actual win even if the other side dies.<br>
+    <b>Dead leg:</b> flatten it when the live leg is taken off, or keep as a tiny lotto with a 2:45 ET hard stop.<br>
+    <b>Pair stop:</b> if neither leg is working, sell ALL if the combined mark is ≤ 50% of the pair debit.<br>
+    <b>Time stop:</b> 2:45–3:00 ET. Do not hold a decaying pair into the cash print.<br>
+    <b>Never:</b> sell premium on the same morning. Never naked short.`;
+    plan += "<br><br>" + notes.map(x => "• " + x).join("<br>");
   } else {
     const s = spot || 7674;
     const pts = otmPts(delta);
@@ -761,7 +887,7 @@ function paintPremiumBtn(bias, skip, event, whip, vix, spot, orH, orL, regime) {
   const sp = orL != null ? rnd5(orL - 20) : null;
   const lp = sp != null ? sp - w : null;
 
-  if (bias === "CALL" || bias === "PUT") {
+  if (bias === "CALL" || bias === "PUT" || bias === "STRADDLE") {
     btn.className = "lock nocredit";
     btn.childNodes[0].textContent = "NO PREMIUM SELLING";
     why.textContent = "Long is unlocked. Do not sell premium.";
@@ -859,8 +985,24 @@ function copyCredit(kind) {
 
 function ticket(side) {
   const debit = num("debit") || 0;
-  const qty = Math.max(1, Math.floor(((num("account")||0) * (num("riskPct")||0) / 100) / Math.max(debit * 100, 1)));
   const s = num("spot") || 7674;
+  if (bookMode === "straddle") {
+    const k = rnd5(s);
+    const pair = debit * 2;
+    const qty = Math.max(1, Math.floor(((num("account")||0) * (num("riskPct")||0) / 100) / Math.max(pair * 100, 1)));
+    return [
+      "EXECUTE STRADDLE",
+      "Buy " + qty + " SPX 0DTE " + k + " CALL @ ~$" + debit.toFixed(2),
+      "Buy " + qty + " SPX 0DTE " + k + " PUT @ ~$" + debit.toFixed(2),
+      "Pair debit ~$" + pair.toFixed(2),
+      "SCRATCH live leg @ $" + (debit * 2.00).toFixed(2) + " (2×) — pair ~ flat if other dies",
+      "TARGET live leg @ $" + (debit * 3.00).toFixed(2) + " (+200% / 3×) — this is the win",
+      "PAIR STOP sell both if combined mark ≤ 50% of pair debit",
+      "Flatten 2:45–3:00 ET if still open",
+      "This app does not send the order to your broker. Paste into thinkorswim / Schwab."
+    ].join("\n");
+  }
+  const qty = Math.max(1, Math.floor(((num("account")||0) * (num("riskPct")||0) / 100) / Math.max(debit * 100, 1)));
   const d = parseFloat($("delta").value);
   const pts = otmPts(d);
   const k = side === "CALL" ? rnd5(s + pts) : rnd5(s - pts);
@@ -942,6 +1084,7 @@ ${l.text || ""}</pre></div>`;
 ["spot","prior","flip","vtrig","cwall","pwall","magnet","vix","regime","book","event","orH","orL","above","below","whip","held10","delta","debit","account","riskPct","creditPx","creditW"]
   .forEach(id => { $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
 restoreLive();
+paintModeBtns();
 render();
 try { $("resDate").value = new Date().toISOString().slice(0,10); } catch(e) {}
 showLogs();
