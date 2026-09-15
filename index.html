@@ -14,56 +14,57 @@
     * { box-sizing: border-box; }
     body {
       margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      background:var(--bg); color:var(--text); padding:12px 12px 48px; max-width:440px; margin:0 auto;
+      background:var(--bg); color:var(--text); padding:8px 8px 36px; max-width:440px; margin:0 auto;
     }
-    h1 { font-size:20px; margin:0 0 4px; }
-    .sub { color:var(--muted); font-size:12px; margin:0 0 12px; line-height:1.4; }
+    h1 { font-size:18px; margin:0 0 2px; }
+    .sub { color:var(--muted); font-size:11px; margin:0 0 6px; line-height:1.3; }
     section {
-      background:var(--card); border:1px solid var(--line); border-radius:16px;
-      padding:12px; margin:0 0 10px;
+      background:var(--card); border:1px solid var(--line); border-radius:12px;
+      padding:8px; margin:0 0 5px;
     }
-    h2 { font-size:12px; letter-spacing:.06em; color:var(--accent); margin:0 0 8px; text-transform:uppercase; }
-    .row { display:flex; gap:8px; margin:0 0 8px; }
+    h2 { font-size:11px; letter-spacing:.05em; color:var(--accent); margin:0 0 5px; text-transform:uppercase; }
+    .row { display:flex; gap:5px; margin:0 0 5px; }
     .row > div { flex:1; min-width:0; }
-    label { display:block; font-size:11px; color:var(--muted); margin:0 0 3px; }
+    label { display:block; font-size:10px; color:var(--muted); margin:0 0 2px; }
     input, select {
       width:100%; background:#120C1A; border:1px solid var(--line); color:var(--text);
-      border-radius:10px; padding:9px; font-size:14px;
+      border-radius:8px; padding:7px; font-size:13px;
     }
-    .seg { display:flex; gap:6px; margin:0 0 10px; }
+    .seg { display:flex; gap:4px; margin:0 0 5px; }
     .seg button {
       flex:1; border:1px solid var(--line); background:#120C1A; color:var(--muted);
-      border-radius:12px; padding:12px 8px; font-size:13px; font-weight:800;
+      border-radius:10px; padding:9px 4px; font-size:12px; font-weight:800;
     }
     .seg button.on { background:var(--accent); color:#061018; border-color:var(--accent); }
-    .watch { display:flex; gap:8px; margin:0 0 10px; }
-    .box { flex:1; border-radius:14px; padding:12px; text-align:center; }
+    .watch { display:flex; gap:5px; margin:0 0 5px; }
+    .box { flex:1; border-radius:11px; padding:8px; text-align:center; }
     .box.call { background:var(--call); }
     .box.put { background:var(--put); }
-    .box .lbl { font-size:10px; letter-spacing:.04em; opacity:.85; text-transform:uppercase; }
-    .box .px { font-size:28px; font-weight:900; margin:4px 0; }
-    .box .why { font-size:11px; opacity:.9; line-height:1.3; }
+    .box .lbl { font-size:9px; letter-spacing:.04em; opacity:.85; text-transform:uppercase; }
+    .box .px { font-size:24px; font-weight:900; margin:2px 0; }
+    .box .why { font-size:10px; opacity:.9; line-height:1.2; }
     .btn {
-      width:100%; border:0; border-radius:14px; padding:15px; font-size:15px; font-weight:800;
-      margin:6px 0 0; background:var(--accent); color:#061018;
+      width:100%; border:0; border-radius:11px; padding:11px; font-size:14px; font-weight:800;
+      margin:3px 0 0; background:var(--accent); color:#061018;
     }
     .btn:disabled { opacity:.55; }
     .btn.ghost { background:transparent; border:1px solid var(--line); color:var(--text); }
-    .meta { text-align:center; font-size:11px; color:var(--muted); margin-top:6px; }
+    .meta { text-align:center; font-size:10px; color:var(--muted); margin-top:3px; }
     .lock {
-      width:100%; border:0; border-radius:18px; padding:20px 10px; margin:0 0 8px;
-      font-size:24px; font-weight:900; letter-spacing:.04em; line-height:1.15;
+      width:100%; border:0; border-radius:12px; padding:12px 8px; margin:0;
+      font-size:20px; font-weight:900; letter-spacing:.03em; line-height:1.1;
     }
     .lock.off { background:var(--gray); color:#D1D5DB; }
     .lock.on { background:var(--green); color:#fff; }
-    .lock .tiny { display:block; margin-top:8px; font-size:13px; font-weight:700; letter-spacing:0; opacity:.95; white-space:pre-line; }
-    .plan { background:#120C1A; border-radius:12px; padding:10px; font-size:13px; line-height:1.45; }
-    .steps { margin:0; padding-left:18px; font-size:13px; line-height:1.45; }
-    .steps li { margin:0 0 6px; }
-    .hint { font-size:11px; color:var(--muted); line-height:1.4; }
-    .kv { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--line); font-size:13px; }
+    .lock .tiny { display:block; margin-top:4px; font-size:11px; font-weight:700; letter-spacing:0; opacity:.95; white-space:pre-line; }
+    .plan { background:#120C1A; border-radius:10px; padding:8px; font-size:12px; line-height:1.35; margin-top:3px; }
+    .steps { margin:0; padding-left:16px; font-size:12px; line-height:1.35; }
+    .steps li { margin:0 0 3px; }
+    .hint { font-size:10px; color:var(--muted); line-height:1.3; margin-top:4px; }
+    .kv { display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--line); font-size:12px; }
     .kv:last-child { border-bottom:0; }
     .hidden { display:none !important; }
+    .actions { display:flex; flex-direction:column; gap:3px; margin:0 0 5px; }
   </style>
 </head>
 <body>
@@ -88,6 +89,15 @@
     </div>
   </div>
 
+  <div class="actions">
+    <button type="button" class="lock off" id="lockBtn" onclick="onLockTap()">WAIT<span class="tiny" id="lockWhy">Conditions not met.</span></button>
+    <button class="btn" type="button" id="copyBtn" disabled onclick="copyTicket()">Copy ticket</button>
+    <div class="plan" id="ticket">Gray = no ticket.</div>
+  </div>
+
+  <button class="btn" type="button" id="refBtn" onclick="autoRefresh()">MANUAL REFRESH</button>
+  <div class="meta" id="meta">GEX + Yahoo via your Worker when possible.</div>
+
   <section>
     <h2>Board</h2>
     <div class="kv"><span>Spot</span><span id="spotOut">—</span></div>
@@ -99,7 +109,7 @@
     <div class="kv" id="tpRow"><span>Exit 1.5(x+y)</span><span id="tpOut">—</span></div>
     <div class="kv" id="stRow"><span>Stop 0.5(x+y)</span><span id="stOut">—</span></div>
 
-    <div class="row" style="margin-top:8px">
+    <div class="row" style="margin-top:6px">
       <div><label>Spot</label><input id="spot" type="number" step="0.01" /></div>
       <div><label>Prior close</label><input id="prior" type="number" step="0.01" value="7657" /></div>
     </div>
@@ -119,7 +129,6 @@
       <div><label>Risk %</label><input id="riskPct" type="number" step="0.05" value="0.5" /></div>
     </div>
 
-    <!-- Naked debit -->
     <div class="row naked-only">
       <div><label>Long debit $</label><input id="debit" type="number" step="0.05" value="8.00" /></div>
       <div>
@@ -132,17 +141,12 @@
       </div>
     </div>
 
-    <!-- Straddle x and y -->
     <div class="row straddle-only hidden">
       <div><label>Call debit x $</label><input id="callDebit" type="number" step="0.05" value="8.00" /></div>
       <div><label>Put debit y $</label><input id="putDebit" type="number" step="0.05" value="7.50" /></div>
     </div>
-
-    <button class="btn" type="button" id="refBtn" onclick="autoRefresh()">MANUAL REFRESH</button>
-    <div class="meta" id="meta">GEX + Yahoo via your Worker when possible.</div>
   </section>
 
-  <!-- Naked confirmation toggles -->
   <section class="naked-only" id="confSec">
     <h2>Open + confirmation</h2>
     <div class="row">
@@ -162,10 +166,6 @@
       </div>
     </div>
   </section>
-
-  <button type="button" class="lock off" id="lockBtn" onclick="onLockTap()">WAIT<span class="tiny" id="lockWhy">Conditions not met.</span></button>
-  <button class="btn" type="button" id="copyBtn" disabled onclick="copyTicket()">Copy ticket</button>
-  <div class="plan" id="ticket" style="margin-top:8px">Gray = no ticket.</div>
 
   <section>
     <h2>Playbook</h2>
