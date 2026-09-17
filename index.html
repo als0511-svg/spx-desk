@@ -101,6 +101,16 @@
   <div class="plan" id="connBox">GEX: not checked yet<br>Yahoo: not checked yet</div>
 
   <section>
+    <h2>Today SPX watchlist (one line)</h2>
+    <p class="hint" style="margin:0 0 4px">Paste from paid service → Enter. Example: 7500-7525 7580-7600 7630 7660 …</p>
+    <input id="watchline" placeholder="7500-7525 7580-7600 7630 7660 7680-7700 …" style="margin-bottom:4px" />
+    <div class="kv"><span>Nearest above</span><span id="lvlAbove">—</span></div>
+    <div class="kv"><span>Nearest below</span><span id="lvlBelow">—</span></div>
+    <div class="kv"><span>Parsed levels</span><span id="lvlCount">0</span></div>
+    <div class="plan" id="lvlList" style="margin-top:4px;max-height:72px;overflow:auto;font-size:11px">No levels yet.</div>
+  </section>
+
+  <section>
     <h2>Board</h2>
     <div class="kv"><span>Spot</span><span id="spotOut">—</span></div>
     <div class="kv"><span>OR 6:30–7:00 AM PT</span><span id="orOut">—</span></div>
@@ -108,6 +118,8 @@
     <div class="kv"><span>VIX</span><span id="vixOut">—</span></div>
     <div class="kv"><span>Gap %</span><span id="gapOut">—</span></div>
     <div class="kv"><span>GEX regime</span><span id="regOut">—</span></div>
+    <div class="kv"><span>Watch above</span><span id="wAboveOut">—</span></div>
+    <div class="kv"><span>Watch below</span><span id="wBelowOut">—</span></div>
     <div class="kv" id="atmRow"><span>ATM strike</span><span id="atmOut">—</span></div>
     <div class="kv" id="pairRow"><span>Pair (x+y)</span><span id="pairOut">—</span></div>
     <div class="kv" id="tpRow"><span>Exit 1.5(x+y)</span><span id="tpOut">—</span></div>
@@ -191,6 +203,7 @@
         <li><b>7:15–8:30 AM PT</b> — Long only after hold outside OR. −GEX: <b>10 min</b>. +GEX: <b>15 min</b>.</li>
         <li>Exit all at <b>2× debit</b>. Stop at <b>0.5×</b>. Flat <b>11:45 AM PT</b>.</li>
         <li>Skip event / VIX≥24 / gap≥0.80% / whipsaw. After 8:30 no new long.</li>
+        <li>Paste <b>today SPX watchlist</b> (one line). OR hold still required; levels are confirmation only.</li>
       </ol>
     </div>
     <div id="playStraddle" class="hidden">
@@ -252,6 +265,67 @@ let ready = false;
 let lastTicket = "";
 let holdSide = null;
 let holdStartMs = null;
+let watchLevels = []; // sorted list of {lo, hi, label}
+
+function parseWatchline(raw) {
+  const out = [];
+  const parts = String(raw || "").trim().split(/[\s,;]+/).filter(Boolean);
+  for (const p of parts) {
+    const m = p.match(/^(\d+(?:\.\d+)?)\s*[-–—]\s*(\d+(?:\.\d+)?)$/);
+    if (m) {
+      let a = +m[1], b = +m[2];
+      if (a > b) { const t = a; a = b; b = t; }
+      out.push({ lo: a, hi: b, label: Math.round(a) + "-" + Math.round(b) });
+    } else if (/^\d+(?:\.\d+)?$/.test(p)) {
+      const v = +p;
+      out.push({ lo: v, hi: v, label: String(Math.round(v)) });
+    }
+  }
+  out.sort((x, y) => x.lo - y.lo);
+  // dedupe by label
+  const seen = new Set();
+  watchLevels = out.filter(z => {
+    if (seen.has(z.label)) return false;
+    seen.add(z.label);
+    return true;
+  });
+  try { localStorage.setItem("spxdesk_watch", JSON.stringify({ raw: String(raw || ""), levels: watchLevels })); } catch (e) {}
+  paintLevels();
+  paint();
+}
+
+function nearestLevels(spot) {
+  if (spot == null || !watchLevels.length) return { above: null, below: null };
+  let above = null, below = null;
+  for (const z of watchLevels) {
+    if (z.lo > spot) { above = z; break; }
+  }
+  for (let i = watchLevels.length - 1; i >= 0; i--) {
+    if (watchLevels[i].hi < spot) { below = watchLevels[i]; break; }
+  }
+  // if inside a zone, treat zone hi as above pressure and lo as below support context
+  for (const z of watchLevels) {
+    if (spot >= z.lo && spot <= z.hi && z.lo !== z.hi) {
+      above = above || { lo: z.hi, hi: z.hi, label: z.label + " high" };
+      below = below || { lo: z.lo, hi: z.lo, label: z.label + " low" };
+    }
+  }
+  return { above, below };
+}
+
+function paintLevels() {
+  $("lvlCount").textContent = String(watchLevels.length);
+  $("lvlList").textContent = watchLevels.length
+    ? watchLevels.map(z => z.label).join(" · ")
+    : "No levels yet.";
+  const spot = num("spot");
+  const n = nearestLevels(spot);
+  $("lvlAbove").textContent = n.above ? n.above.label : "—";
+  $("lvlBelow").textContent = n.below ? n.below.label : "—";
+  $("wAboveOut").textContent = n.above ? n.above.label : "—";
+  $("wBelowOut").textContent = n.below ? n.below.label : "—";
+}
+
 
 function ptNowMinutes() {
   const s = new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", hour12: false, hour: "2-digit", minute: "2-digit" });
@@ -301,6 +375,13 @@ function paint() {
   $("vixOut").textContent = vix != null ? vix.toFixed(2) : "—";
   $("gapOut").textContent = gap != null ? gap.toFixed(2) + "%" : "—";
   $("regOut").textContent = regime === "positive" ? "+GEX (15-min hold)" : "−GEX (10-min hold)";
+  const near = nearestLevels(spot);
+  $("wAboveOut").textContent = near.above ? near.above.label : "—";
+  $("wBelowOut").textContent = near.below ? near.below.label : "—";
+  if ($("lvlAbove")) {
+    $("lvlAbove").textContent = near.above ? near.above.label : "—";
+    $("lvlBelow").textContent = near.below ? near.below.label : "—";
+  }
 
   if (orH != null) {
     $("callPx").textContent = Math.round(orH);
@@ -446,12 +527,16 @@ function paint() {
   lock.className = "lock on";
   lock.style.background = side === "CALL" ? "#059669" : "#B91C1C";
   lock.childNodes[0].textContent = side === "CALL" ? "PLACE CALL" : "PLACE PUT";
+  const nl = nearestLevels(spot);
+  const conf = side === "CALL"
+    ? (nl.above ? ("Next watch " + nl.above.label) : "No watch above")
+    : (nl.below ? ("Next watch " + nl.below.label) : "No watch below");
   why.textContent =
     "BUY " + k + " " + side + "\n" +
     "Debit ~$" + debit.toFixed(2) + " × " + qty +
     (regime === "positive" ? " (half size +GEX)" : "") + "\n" +
     "Target $" + tp + " (2×) · Stop $" + st + " (0.5×)\n" +
-    "Flat 11:45 AM PT";
+    conf + " · Flat 11:45 AM PT";
   lastTicket =
     "BUY " + qty + " SPX 0DTE " + k + " " + side + " @ ~$" + debit.toFixed(2) + "\n" +
     "TARGET sell ALL @ $" + tp + " (+100%)\n" +
@@ -593,6 +678,24 @@ function showLogs() {
     el.addEventListener("change", paint);
   });
 try { $("resDate").value = new Date().toISOString().slice(0, 10); } catch (e) {}
+const wl = $("watchline");
+if (wl) {
+  wl.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      parseWatchline(wl.value);
+    }
+  });
+  wl.addEventListener("change", () => parseWatchline(wl.value));
+  try {
+    const saved = JSON.parse(localStorage.getItem("spxdesk_watch") || "null");
+    if (saved && saved.raw) {
+      wl.value = saved.raw;
+      watchLevels = saved.levels || [];
+      paintLevels();
+    }
+  } catch (e) {}
+}
 setMode("naked");
 showLogs();
 setInterval(() => { if (holdStartMs && mode === "naked") paint(); }, 15000);
