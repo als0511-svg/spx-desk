@@ -541,8 +541,13 @@ async function autoRefresh() {
     }
   } catch (e) {}
   $("connBox").innerHTML = gexLine + "<br>" + yhooLine;
-  $("meta").textContent = stamp() + " PT · " + bits.join(" · ");
+  const spxNow = num("spot");
+  const ts = stamp();
+  $("meta").textContent = ts + " PT · " + bits.join(" · ");
   $("refBtn").disabled = false;
+  $("refBtn").textContent = spxNow != null
+    ? ("MANUAL REFRESH (SPX " + Math.round(spxNow) + " · " + ts + ")")
+    : ("MANUAL REFRESH (" + ts + ")");
   paint();
 }
 
