@@ -102,8 +102,9 @@
 
   <section>
     <h2>Today SPX watchlist (one line)</h2>
-    <p class="hint" style="margin:0 0 4px">Paste from paid service → Enter. Example: 7500-7525 7580-7600 7630 7660 …</p>
+    <p class="hint" style="margin:0 0 4px">Paste the one-line list, then tap <b>LOAD WATCHLIST</b>.</p>
     <input id="watchline" placeholder="7500-7525 7580-7600 7630 7660 7680-7700 …" style="margin-bottom:4px" />
+    <button class="btn" type="button" id="watchBtn" onclick="parseWatchline($('watchline').value)">LOAD WATCHLIST</button>
     <div class="kv"><span>Nearest above</span><span id="lvlAbove">—</span></div>
     <div class="kv"><span>Nearest below</span><span id="lvlBelow">—</span></div>
     <div class="kv"><span>Parsed levels</span><span id="lvlCount">0</span></div>
