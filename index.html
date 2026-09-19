@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>SPX 0DTE Desk</title>
+  <title>SPX 0DTE Master Desk</title>
   <style>
     :root {
       --bg:#0F0A14; --card:#1A1224; --text:#F3EEF8; --muted:#9B8FB0;
       --line:#2A2038; --accent:#38BDF8; --green:#059669; --gray:#4B5563;
-      --call:#059669; --put:#B91C1C;
+      --call:#059669; --put:#B91C1C; --gold:#F5C15C;
     }
     * { box-sizing: border-box; }
     body {
@@ -20,9 +20,9 @@
     .sub { color:var(--muted); font-size:11px; margin:0 0 6px; line-height:1.3; }
     section {
       background:var(--card); border:1px solid var(--line); border-radius:12px;
-      padding:8px; margin:0 0 5px;
+      padding:8px; margin:0 0 6px;
     }
-    h2 { font-size:11px; letter-spacing:.05em; color:var(--accent); margin:0 0 5px; text-transform:uppercase; }
+    h2 { font-size:11px; letter-spacing:.05em; color:var(--accent); margin:0 0 6px; text-transform:uppercase; }
     .row { display:flex; gap:5px; margin:0 0 5px; }
     .row > div { flex:1; min-width:0; }
     label { display:block; font-size:10px; color:var(--muted); margin:0 0 2px; }
@@ -30,31 +30,52 @@
       width:100%; background:#120C1A; border:1px solid var(--line); color:var(--text);
       border-radius:8px; padding:7px; font-size:13px;
     }
-    .seg { display:flex; gap:4px; margin:0 0 5px; }
+    .seg { display:flex; gap:4px; margin:0 0 6px; flex-wrap:wrap; }
     .seg button {
-      flex:1; border:1px solid var(--line); background:#120C1A; color:var(--muted);
-      border-radius:10px; padding:9px 4px; font-size:12px; font-weight:800;
+      flex:1; min-width:30%; border:1px solid var(--line); background:#120C1A; color:var(--muted);
+      border-radius:10px; padding:9px 4px; font-size:11px; font-weight:800;
     }
     .seg button.on { background:var(--accent); color:#061018; border-color:var(--accent); }
+    .seg2 { display:flex; gap:4px; margin:0 0 6px; }
+    .seg2 button {
+      flex:1; border:1px solid var(--line); background:#120C1A; color:var(--muted);
+      border-radius:10px; padding:8px 4px; font-size:11px; font-weight:800;
+    }
+    .seg2 button.on { background:var(--gold); color:#1A1020; border-color:var(--gold); }
     .watch { display:flex; gap:5px; margin:0 0 5px; }
     .box { flex:1; border-radius:11px; padding:8px; text-align:center; }
     .box.call { background:var(--call); }
     .box.put { background:var(--put); }
     .box .lbl { font-size:9px; letter-spacing:.04em; opacity:.9; text-transform:uppercase; }
-    .box .px { font-size:24px; font-weight:900; margin:2px 0; }
+    .box .px { font-size:22px; font-weight:900; margin:2px 0; }
     .box .why { font-size:10px; opacity:.95; line-height:1.2; }
+    .levels { display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin:0 0 6px; }
+    .lvl { background:#120C1A; border-radius:10px; padding:8px 4px; text-align:center; border:1px solid var(--line); }
+    .lvl .k { font-size:9px; color:var(--muted); text-transform:uppercase; }
+    .lvl .v { font-size:20px; font-weight:900; margin-top:2px; }
+    .lvl.buy { border-color:#059669; }
+    .lvl.sell { border-color:#B91C1C; }
+    .pricebar {
+      background:#120C1A; border:1px solid var(--line); border-radius:12px;
+      padding:10px; text-align:center; margin:0 0 6px;
+    }
+    .pricebar .px { font-size:26px; font-weight:900; }
+    .pricebar .ts { font-size:11px; color:var(--muted); margin-top:2px; }
     .btn {
-      width:100%; border:0; border-radius:11px; padding:11px; font-size:14px; font-weight:800;
+      width:100%; border:0; border-radius:11px; padding:11px; font-size:13px; font-weight:800;
       margin:3px 0 0; background:var(--accent); color:#061018;
     }
     .btn:disabled { opacity:.55; }
+    .btn.ghost { background:transparent; border:1px solid var(--line); color:var(--text); }
     .meta { text-align:center; font-size:10px; color:var(--muted); margin-top:3px; }
     .lock {
-      width:100%; border:0; border-radius:12px; padding:12px 8px; margin:0;
-      font-size:20px; font-weight:900; letter-spacing:.03em; line-height:1.1;
+      width:100%; border:0; border-radius:12px; padding:12px 8px; margin:0 0 4px;
+      font-size:18px; font-weight:900; line-height:1.1;
     }
     .lock.off { background:var(--gray); color:#D1D5DB; }
-    .lock.on { background:var(--green); color:#fff; }
+    .lock.on, .lock.long { background:var(--green); color:#fff; }
+    .lock.arm { background:var(--gold); color:#1A1020; }
+    .lock.out { background:var(--put); color:#fff; }
     .lock .tiny { display:block; margin-top:4px; font-size:11px; font-weight:700; letter-spacing:0; opacity:.95; white-space:pre-line; }
     .plan { background:#120C1A; border-radius:10px; padding:8px; font-size:12px; line-height:1.35; margin-top:3px; }
     .steps { margin:0; padding-left:16px; font-size:12px; line-height:1.35; }
@@ -63,135 +84,142 @@
     .kv { display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--line); font-size:12px; }
     .kv:last-child { border-bottom:0; }
     .hidden { display:none !important; }
-    .actions { display:flex; flex-direction:column; gap:3px; margin:0 0 5px; }
-    .hold { text-align:center; font-weight:800; font-size:14px; margin:0 0 5px; padding:8px; background:#120C1A; border-radius:10px; }
+    .hold { text-align:center; font-weight:800; font-size:13px; margin:0 0 5px; padding:8px; background:#120C1A; border-radius:10px; }
   </style>
 </head>
 <body>
-  <h1>SPX 0DTE Desk</h1>
-  <p class="sub">Naked long or ATM straddle. All times <b>PT (Los Angeles)</b>. DST automatic.</p>
+  <h1>SPX 0DTE Master Desk</h1>
+  <p class="sub">Naked · Straddle · Open Pop. All clocks <b>PT</b>.</p>
 
   <div class="seg">
-    <button type="button" id="modeNaked" class="on" onclick="setMode('naked')">NAKED LONG</button>
-    <button type="button" id="modeStraddle" onclick="setMode('straddle')">ATM STRADDLE</button>
+    <button type="button" id="tabNaked" class="on" onclick="setBook('naked')">NAKED</button>
+    <button type="button" id="tabStraddle" onclick="setBook('straddle')">STRADDLE</button>
+    <button type="button" id="tabPop" onclick="setBook('pop')">OPEN POP</button>
   </div>
 
+  <div class="pricebar">
+    <div class="px" id="livePx">SPX —</div>
+    <div class="ts" id="liveTs">Waiting…</div>
+  </div>
+  <button class="btn" type="button" id="refBtn" onclick="autoRefresh(true)">REFRESH PRICE</button>
+  <div class="meta" id="meta">Auto every 15s · or tap refresh</div>
+  <div class="plan" id="connBox">GEX/Yahoo: not checked</div>
+
+  <!-- OPEN POP submode -->
+  <div id="popSeg" class="seg2 hidden">
+    <button type="button" id="popFade" class="on" onclick="setPopMode('fade')">FADE +10/−20</button>
+    <button type="button" id="popRev" onclick="setPopMode('reverse')">REVERSE −10/+20</button>
+  </div>
+
+  <!-- Naked watch -->
   <div class="watch" id="watchNaked">
     <div class="box call">
-      <div class="lbl">Calls — green</div>
+      <div class="lbl">Calls</div>
       <div class="px" id="callPx">—</div>
       <div class="why" id="callWhy">OR high</div>
     </div>
     <div class="box put">
-      <div class="lbl">Puts — red</div>
+      <div class="lbl">Puts</div>
       <div class="px" id="putPx">—</div>
       <div class="why" id="putWhy">OR low</div>
     </div>
   </div>
-  <div class="hold" id="holdLine">Hold: — / 10 min (display only)</div>
+  <div class="hold" id="holdLine">Hold: — (display only)</div>
 
-  <div class="actions">
-    <button type="button" class="lock off" id="lockBtn" onclick="onLockTap()">WAIT<span class="tiny" id="lockWhy">Conditions not met.</span></button>
-    <button class="btn" type="button" id="copyBtn" disabled onclick="copyTicket()">Copy ticket</button>
-    <div class="plan" id="ticket">Gray = no ticket.</div>
+  <!-- Pop levels -->
+  <div class="levels hidden" id="popLevels">
+    <div class="lvl"><div class="k">Open</div><div class="v" id="openShow">—</div></div>
+    <div class="lvl buy"><div class="k" id="buyLbl">Buy</div><div class="v" id="buyShow">—</div></div>
+    <div class="lvl sell"><div class="k">Sell</div><div class="v" id="sellShow">—</div></div>
   </div>
 
-  <button class="btn" type="button" id="refBtn" onclick="autoRefresh()">MANUAL REFRESH</button>
-  <div class="meta" id="meta">Tap refresh for GEX + Yahoo status.</div>
-  <div class="plan" id="connBox">GEX: not checked yet<br>Yahoo: not checked yet</div>
-
-  <section>
-    <h2>Today SPX watchlist (one line)</h2>
-    <p class="hint" style="margin:0 0 4px">Paste the one-line list, then tap <b>LOAD WATCHLIST</b>.</p>
-    <input id="watchline" placeholder="7500-7525 7580-7600 7630 7660 7680-7700 …" style="margin-bottom:4px" />
-    <button class="btn" type="button" id="watchBtn" onclick="parseWatchline($('watchline').value)">LOAD WATCHLIST</button>
-    <div class="kv"><span>Nearest above</span><span id="lvlAbove">—</span></div>
-    <div class="kv"><span>Nearest below</span><span id="lvlBelow">—</span></div>
-    <div class="kv"><span>Parsed levels</span><span id="lvlCount">0</span></div>
-    <div class="plan" id="lvlList" style="margin-top:4px;max-height:72px;overflow:auto;font-size:11px">No levels yet.</div>
-  </section>
+  <button type="button" class="lock off" id="lockBtn">WAIT<span class="tiny" id="lockWhy">Conditions not met.</span></button>
+  <button class="btn ghost" type="button" id="copyBtn" disabled onclick="copyTicket()">Copy ticket</button>
+  <div class="plan" id="ticket">Gray = no ticket.</div>
 
   <section>
     <h2>Board</h2>
     <div class="kv"><span>Spot</span><span id="spotOut">—</span></div>
-    <div class="kv"><span>OR 6:30–7:00 AM PT</span><span id="orOut">—</span></div>
-    <div class="kv"><span>OR width</span><span id="orWOut">—</span></div>
+    <div class="kv" id="rowOpen"><span>Open</span><span id="openOut">—</span></div>
+    <div class="kv" id="rowOR"><span>OR 6:30–7:00 PT</span><span id="orOut">—</span></div>
+    <div class="kv" id="rowORW"><span>OR width</span><span id="orWOut">—</span></div>
     <div class="kv"><span>VIX</span><span id="vixOut">—</span></div>
     <div class="kv"><span>Gap %</span><span id="gapOut">—</span></div>
-    <div class="kv"><span>GEX regime</span><span id="regOut">—</span></div>
-    <div class="kv"><span>Watch above</span><span id="wAboveOut">—</span></div>
-    <div class="kv"><span>Watch below</span><span id="wBelowOut">—</span></div>
-    <div class="kv" id="atmRow"><span>ATM strike</span><span id="atmOut">—</span></div>
-    <div class="kv" id="pairRow"><span>Pair (x+y)</span><span id="pairOut">—</span></div>
-    <div class="kv" id="tpRow"><span>Exit 1.5(x+y)</span><span id="tpOut">—</span></div>
-    <div class="kv" id="stRow"><span>Stop 0.5(x+y)</span><span id="stOut">—</span></div>
+    <div class="kv" id="rowReg"><span>GEX regime</span><span id="regOut">—</span></div>
+    <div class="kv hidden" id="atmRow"><span>ATM</span><span id="atmOut">—</span></div>
+    <div class="kv hidden" id="pairRow"><span>Pair x+y</span><span id="pairOut">—</span></div>
+    <div class="kv hidden" id="tpRow"><span>Exit 1.5(x+y)</span><span id="tpOut">—</span></div>
+    <div class="kv hidden" id="stRow"><span>Stop 0.5(x+y)</span><span id="stOut">—</span></div>
+    <div class="kv hidden" id="popBuyRow"><span>Buy level</span><span id="popBuyOut">—</span></div>
+    <div class="kv hidden" id="popSellRow"><span>Sell level</span><span id="popSellOut">—</span></div>
 
     <div class="row" style="margin-top:6px">
       <div><label>Spot</label><input id="spot" type="number" step="0.01" /></div>
       <div><label>Prior close</label><input id="prior" type="number" step="0.01" value="7657" /></div>
     </div>
-    <div class="row">
+    <div class="row" id="rowOpenIn">
+      <div><label>Open</label><input id="openPx" type="number" step="0.01" /></div>
+      <div><label>VIX</label><input id="vix" type="number" step="0.01" value="18" /></div>
+    </div>
+    <div class="row" id="rowORin">
       <div><label>OR high</label><input id="orH" type="number" step="0.01" /></div>
       <div><label>OR low</label><input id="orL" type="number" step="0.01" /></div>
     </div>
     <div class="row">
-      <div><label>VIX</label><input id="vix" type="number" step="0.01" value="18" /></div>
       <div>
-        <label>Event day (CPI/FOMC/etc)</label>
-        <select id="event"><option value="n">No</option><option value="y">Yes — skip both books</option></select>
+        <label>Event day</label>
+        <select id="event"><option value="n">No</option><option value="y">Yes — skip</option></select>
       </div>
-    </div>
-    <div class="row">
       <div>
         <label>GEX regime</label>
         <select id="regime">
-          <option value="negative">−GEX (trend)</option>
-          <option value="positive">+GEX (pin/chop)</option>
+          <option value="negative">−GEX</option>
+          <option value="positive">+GEX</option>
         </select>
       </div>
-      <div><label>Account $</label><input id="account" type="number" value="50000" /></div>
     </div>
     <div class="row">
+      <div><label>Account $</label><input id="account" type="number" value="50000" /></div>
       <div><label>Risk % naked</label><input id="riskPct" type="number" step="0.05" value="0.40" /></div>
-      <div><label>Risk % straddle (max 0.25)</label><input id="riskStr" type="number" step="0.05" value="0.25" /></div>
     </div>
 
     <div class="row naked-only">
       <div><label>Long debit $</label><input id="debit" type="number" step="0.05" value="8.00" /></div>
       <div>
-        <label>Target delta</label>
-        <select id="delta">
-          <option value="0.30">0.30 — ~15 pts OTM</option>
-          <option value="0.25">0.25</option>
-          <option value="0.20">0.20</option>
-        </select>
+        <label>Delta</label>
+        <select id="delta"><option value="0.30">0.30</option><option value="0.25">0.25</option><option value="0.20">0.20</option></select>
       </div>
     </div>
-
     <div class="row straddle-only hidden">
-      <div><label>Call debit x $</label><input id="callDebit" type="number" step="0.05" value="8.00" /></div>
-      <div><label>Put debit y $</label><input id="putDebit" type="number" step="0.05" value="7.50" /></div>
+      <div><label>Call debit x</label><input id="callDebit" type="number" step="0.05" value="8.00" /></div>
+      <div><label>Put debit y</label><input id="putDebit" type="number" step="0.05" value="7.50" /></div>
+    </div>
+    <div class="row pop-only hidden">
+      <div><label>Entry offset</label><input id="entryPts" type="number" value="10" step="1" /></div>
+      <div><label>Target pts</label><input id="targetPts" type="number" value="20" step="1" /></div>
+    </div>
+    <div class="row pop-only hidden">
+      <div>
+        <label>Buy filled?</label>
+        <select id="buyFilled"><option value="n">No</option><option value="y">Yes</option></select>
+      </div>
+      <div>
+        <label>Sell filled?</label>
+        <select id="sellFilled"><option value="n">No</option><option value="y">Yes</option></select>
+      </div>
     </div>
   </section>
 
   <section class="naked-only" id="confSec">
-    <h2>Open + confirmation (you flip these)</h2>
-    <p class="hint" style="margin:0 0 6px">Hold line is display only. Flip toggles yourself after you agree with the clock.</p>
+    <h2>Naked confirmation (manual)</h2>
+    <p class="hint" style="margin:0 0 6px">Hold clock is display only. You flip toggles.</p>
     <div class="row">
-      <div><label>Accepted above OR</label>
-        <select id="above"><option value="n">No</option><option value="y">Yes</option></select>
-      </div>
-      <div><label>Accepted below OR</label>
-        <select id="below"><option value="n">No</option><option value="y">Yes</option></select>
-      </div>
+      <div><label>Above OR</label><select id="above"><option value="n">No</option><option value="y">Yes</option></select></div>
+      <div><label>Below OR</label><select id="below"><option value="n">No</option><option value="y">Yes</option></select></div>
     </div>
     <div class="row">
-      <div><label>Whipsaw both sides</label>
-        <select id="whip"><option value="n">No</option><option value="y">Yes</option></select>
-      </div>
-      <div><label>Held long enough outside</label>
-        <select id="held10"><option value="n">No</option><option value="y">Yes</option></select>
-      </div>
+      <div><label>Whipsaw</label><select id="whip"><option value="n">No</option><option value="y">Yes</option></select></div>
+      <div><label>Held long enough</label><select id="held10"><option value="n">No</option><option value="y">Yes</option></select></div>
     </div>
   </section>
 
@@ -199,60 +227,29 @@
     <h2>Playbook</h2>
     <div id="playNaked">
       <ol class="steps">
-        <li><b>6:10 AM PT</b> — Refresh. Set Event=Yes the night before CPI/FOMC.</li>
-        <li><b>6:30–7:00</b> — OR prints. Still WAIT.</li>
-        <li><b>7:15–8:30 AM PT</b> — Long only after hold outside OR. −GEX: <b>10 min</b>. +GEX: <b>15 min</b>.</li>
-        <li>Exit all at <b>2× debit</b>. Stop at <b>0.5×</b>. Flat <b>11:45 AM PT</b>.</li>
-        <li>Skip event / VIX≥24 / gap≥0.80% / whipsaw. After 8:30 no new long.</li>
-        <li>Paste <b>today SPX watchlist</b> (one line). OR hold still required; levels are confirmation only.</li>
+        <li>7:15–8:30 AM PT · 10-min hold (−GEX) or 15-min (+GEX).</li>
+        <li>Exit 2× debit · stop 0.5× · flat 11:45 AM PT.</li>
+        <li>Skip event / VIX≥24 / gap≥0.80% / whipsaw.</li>
       </ol>
     </div>
     <div id="playStraddle" class="hidden">
       <ol class="steps">
-        <li><b>After 7:00 AM PT only</b> — OR must be complete. Buy ATM call (x) + ATM put (y).</li>
-        <li>Exit both at <b>1.5(x+y)</b>. Stop at <b>0.5(x+y)</b>. Time stop <b>10:00 AM PT</b>.</li>
-        <li>Skip event / VIX≥24 / gap≥1.0% / OR wider than 0.40% of spot / before 7:00 / after 10:00.</li>
-        <li>Risk cap <b>0.25%</b> of account on the pair.</li>
+        <li>After 7:00 AM PT · ATM call (x) + put (y).</li>
+        <li>Exit 1.5(x+y) · stop 0.5(x+y) · flat 10:00 AM PT.</li>
+        <li>Skip event / VIX≥24 / gap≥1% / OR&gt;0.40%.</li>
+      </ol>
+    </div>
+    <div id="playPop" class="hidden">
+      <ol class="steps">
+        <li><b>FADE:</b> buy stop open+10 → sell open−10.</li>
+        <li><b>REVERSE:</b> buy limit open−10 → sell open+10.</li>
+        <li>Cancel if not filled by 10:00 AM PT · time stop if still long.</li>
+        <li>One side only per morning.</li>
       </ol>
     </div>
   </section>
 
-  <section>
-    <h2>Daily results</h2>
-    <p class="hint" style="margin-top:0">Log after the session. Stored on this phone only.</p>
-    <div class="row">
-      <div><label>Date</label><input id="resDate" type="date" /></div>
-      <div>
-        <label>Book</label>
-        <select id="resBook">
-          <option value="WAIT">WAIT</option>
-          <option value="NAKED_CALL">Naked call</option>
-          <option value="NAKED_PUT">Naked put</option>
-          <option value="STRADDLE">Straddle</option>
-        </select>
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label>Outcome</label>
-        <select id="resOut">
-          <option value="none">No trade</option>
-          <option value="tp">Hit target</option>
-          <option value="stop">Hit stop</option>
-          <option value="time">Time stop</option>
-          <option value="scratch">Scratch</option>
-        </select>
-      </div>
-      <div><label>P&amp;L $</label><input id="resPnl" inputmode="decimal" placeholder="optional" /></div>
-    </div>
-    <label>Note</label>
-    <input id="resNote" placeholder="e.g. +GEX 15-min hold skipped" />
-    <button class="btn" type="button" onclick="saveDay()">Save result</button>
-    <div class="plan" id="resStats" style="margin-top:6px"></div>
-    <div id="logs"></div>
-  </section>
-
-  <p class="hint">Not financial advice. Debit risk only. No naked short.</p>
+  <p class="hint">Not financial advice. Debit risk on options books. Open Pop is index-level path.</p>
 
 <script>
 const PROXY = "https://spx-proxy.als-0511.workers.dev/?url=";
@@ -260,99 +257,80 @@ const GEX = "https://raw.githubusercontent.com/dhawalc/spx-gamma-levels/main/dat
 const $ = id => document.getElementById(id);
 const num = id => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : null; };
 const rnd5 = x => Math.round(x / 5) * 5;
+const rnd1 = x => Math.round(x * 100) / 100;
 
-let mode = "naked";
+let book = "naked";
+let popMode = "fade";
 let ready = false;
 let lastTicket = "";
 let holdSide = null;
 let holdStartMs = null;
-let watchLevels = []; // sorted list of {lo, hi, label}
+let refreshing = false;
 
-function parseWatchline(raw) {
-  const out = [];
-  const parts = String(raw || "").trim().split(/[\s,;]+/).filter(Boolean);
-  for (const p of parts) {
-    const m = p.match(/^(\d+(?:\.\d+)?)\s*[-–—]\s*(\d+(?:\.\d+)?)$/);
-    if (m) {
-      let a = +m[1], b = +m[2];
-      if (a > b) { const t = a; a = b; b = t; }
-      out.push({ lo: a, hi: b, label: Math.round(a) + "-" + Math.round(b) });
-    } else if (/^\d+(?:\.\d+)?$/.test(p)) {
-      const v = +p;
-      out.push({ lo: v, hi: v, label: String(Math.round(v)) });
-    }
-  }
-  out.sort((x, y) => x.lo - y.lo);
-  // dedupe by label
-  const seen = new Set();
-  watchLevels = out.filter(z => {
-    if (seen.has(z.label)) return false;
-    seen.add(z.label);
-    return true;
-  });
-  try { localStorage.setItem("spxdesk_watch", JSON.stringify({ raw: String(raw || ""), levels: watchLevels })); } catch (e) {}
-  paintLevels();
-  paint();
+function ptNow(sec) {
+  const o = { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" };
+  if (sec) o.second = "2-digit";
+  return new Date().toLocaleString("en-US", o);
 }
-
-function nearestLevels(spot) {
-  if (spot == null || !watchLevels.length) return { above: null, below: null };
-  let above = null, below = null;
-  for (const z of watchLevels) {
-    if (z.lo > spot) { above = z; break; }
-  }
-  for (let i = watchLevels.length - 1; i >= 0; i--) {
-    if (watchLevels[i].hi < spot) { below = watchLevels[i]; break; }
-  }
-  // if inside a zone, treat zone hi as above pressure and lo as below support context
-  for (const z of watchLevels) {
-    if (spot >= z.lo && spot <= z.hi && z.lo !== z.hi) {
-      above = above || { lo: z.hi, hi: z.hi, label: z.label + " high" };
-      below = below || { lo: z.lo, hi: z.lo, label: z.label + " low" };
-    }
-  }
-  return { above, below };
-}
-
-function paintLevels() {
-  $("lvlCount").textContent = String(watchLevels.length);
-  $("lvlList").textContent = watchLevels.length
-    ? watchLevels.map(z => z.label).join(" · ")
-    : "No levels yet.";
-  const spot = num("spot");
-  const n = nearestLevels(spot);
-  $("lvlAbove").textContent = n.above ? n.above.label : "—";
-  $("lvlBelow").textContent = n.below ? n.below.label : "—";
-  $("wAboveOut").textContent = n.above ? n.above.label : "—";
-  $("wBelowOut").textContent = n.below ? n.below.label : "—";
-}
-
-
-function ptNowMinutes() {
+function ptMinutes() {
   const s = new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", hour12: false, hour: "2-digit", minute: "2-digit" });
   const [hh, mm] = s.split(":").map(Number);
   return hh * 60 + mm;
 }
-function stamp() {
-  return new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+function setBook(b) {
+  book = b;
+  $("tabNaked").classList.toggle("on", b === "naked");
+  $("tabStraddle").classList.toggle("on", b === "straddle");
+  $("tabPop").classList.toggle("on", b === "pop");
+  document.querySelectorAll(".naked-only").forEach(el => el.classList.toggle("hidden", b !== "naked"));
+  document.querySelectorAll(".straddle-only").forEach(el => el.classList.toggle("hidden", b !== "straddle"));
+  document.querySelectorAll(".pop-only").forEach(el => el.classList.toggle("hidden", b !== "pop"));
+  $("watchNaked").classList.toggle("hidden", b !== "naked");
+  $("holdLine").classList.toggle("hidden", b !== "naked");
+  $("popSeg").classList.toggle("hidden", b !== "pop");
+  $("popLevels").classList.toggle("hidden", b !== "pop");
+  $("playNaked").classList.toggle("hidden", b !== "naked");
+  $("playStraddle").classList.toggle("hidden", b !== "straddle");
+  $("playPop").classList.toggle("hidden", b !== "pop");
+  ["atmRow","pairRow","tpRow","stRow"].forEach(id => $(id).classList.toggle("hidden", b !== "straddle"));
+  ["popBuyRow","popSellRow","rowOpen"].forEach(id => $(id).classList.toggle("hidden", b !== "pop"));
+  $("rowOR").classList.toggle("hidden", b === "pop");
+  $("rowORW").classList.toggle("hidden", b === "pop");
+  $("rowORin").classList.toggle("hidden", b === "pop");
+  $("buyFilled").value = "n";
+  $("sellFilled").value = "n";
+  paint();
 }
-function setMode(m) {
-  mode = m;
-  $("modeNaked").classList.toggle("on", m === "naked");
-  $("modeStraddle").classList.toggle("on", m === "straddle");
-  document.querySelectorAll(".naked-only").forEach(el => el.classList.toggle("hidden", m !== "naked"));
-  document.querySelectorAll(".straddle-only").forEach(el => el.classList.toggle("hidden", m !== "straddle"));
-  $("watchNaked").classList.toggle("hidden", m !== "naked");
-  $("holdLine").classList.toggle("hidden", m !== "naked");
-  $("playNaked").classList.toggle("hidden", m !== "naked");
-  $("playStraddle").classList.toggle("hidden", m !== "straddle");
-  ["atmRow","pairRow","tpRow","stRow"].forEach(id => $(id).classList.toggle("hidden", m !== "straddle"));
+function setPopMode(m) {
+  popMode = m;
+  $("popFade").classList.toggle("on", m === "fade");
+  $("popRev").classList.toggle("on", m === "reverse");
+  $("buyLbl").textContent = m === "fade" ? "Buy stop" : "Buy limit";
+  $("buyFilled").value = "n";
+  $("sellFilled").value = "n";
   paint();
 }
 function otmPts(d) {
   if (d >= 0.28) return 15;
   if (d >= 0.23) return 25;
   return 40;
+}
+
+function popLevels() {
+  const open = num("openPx");
+  const entry = num("entryPts") ?? 10;
+  const target = num("targetPts") ?? 20;
+  if (open == null) return { open: null, buy: null, sell: null, entry, target };
+  let buy, sell;
+  if (popMode === "fade") {
+    buy = rnd1(open + entry);
+    sell = rnd1(buy - target);
+  } else {
+    buy = rnd1(open - entry);
+    sell = rnd1(buy + target);
+  }
+  return { open, buy, sell, entry, target };
 }
 
 function paint() {
@@ -364,7 +342,7 @@ function paint() {
   const event = $("event").value === "y";
   const regime = $("regime").value;
   const gap = (spot != null && prior) ? ((spot - prior) / prior) * 100 : null;
-  const ptm = ptNowMinutes();
+  const ptm = ptMinutes();
   const acct = num("account") || 0;
   const orW = (orH != null && orL != null && orH > orL) ? orH - orL : null;
   const orPct = (orW != null && spot) ? (orW / spot) * 100 : null;
@@ -375,55 +353,35 @@ function paint() {
   $("orWOut").textContent = orW != null ? (orW.toFixed(1) + " pts" + (orPct != null ? " · " + orPct.toFixed(2) + "%" : "")) : "—";
   $("vixOut").textContent = vix != null ? vix.toFixed(2) : "—";
   $("gapOut").textContent = gap != null ? gap.toFixed(2) + "%" : "—";
-  $("regOut").textContent = regime === "positive" ? "+GEX (15-min hold)" : "−GEX (10-min hold)";
-  const near = nearestLevels(spot);
-  $("wAboveOut").textContent = near.above ? near.above.label : "—";
-  $("wBelowOut").textContent = near.below ? near.below.label : "—";
-  if ($("lvlAbove")) {
-    $("lvlAbove").textContent = near.above ? near.above.label : "—";
-    $("lvlBelow").textContent = near.below ? near.below.label : "—";
-  }
+  $("regOut").textContent = regime === "positive" ? "+GEX (15m hold)" : "−GEX (10m hold)";
+  if (spot != null) $("livePx").textContent = "SPX " + spot.toFixed(2);
 
-  if (orH != null) {
-    $("callPx").textContent = Math.round(orH);
-    $("callWhy").textContent = "Hold " + holdNeed + " min above → call";
-  } else {
-    $("callPx").textContent = "—";
-    $("callWhy").textContent = "Need OR high";
-  }
-  if (orL != null) {
-    $("putPx").textContent = Math.round(orL);
-    $("putWhy").textContent = "Hold " + holdNeed + " min below → put";
-  } else {
-    $("putPx").textContent = "—";
-    $("putWhy").textContent = "Need OR low";
-  }
+  if (orH != null) { $("callPx").textContent = Math.round(orH); $("callWhy").textContent = "Hold " + holdNeed + " min above"; }
+  else { $("callPx").textContent = "—"; $("callWhy").textContent = "Need OR high"; }
+  if (orL != null) { $("putPx").textContent = Math.round(orL); $("putWhy").textContent = "Hold " + holdNeed + " min below"; }
+  else { $("putPx").textContent = "—"; $("putWhy").textContent = "Need OR low"; }
 
+  // hold display only
   let sideNow = null;
   if (spot != null && orH != null && orL != null) {
     if (spot > orH) sideNow = "CALL";
     else if (spot < orL) sideNow = "PUT";
   }
   if (!sideNow || (holdSide && sideNow !== holdSide)) {
-    holdSide = sideNow;
-    holdStartMs = sideNow ? Date.now() : null;
+    holdSide = sideNow; holdStartMs = sideNow ? Date.now() : null;
   } else if (sideNow && !holdStartMs) {
-    holdSide = sideNow;
-    holdStartMs = Date.now();
+    holdSide = sideNow; holdStartMs = Date.now();
   }
   const heldMin = holdStartMs ? Math.floor((Date.now() - holdStartMs) / 60000) : 0;
-  if (!orH || !orL) $("holdLine").textContent = "Hold: need OR first";
-  else if (!sideNow) $("holdLine").textContent = "Hold: 0 / " + holdNeed + " min (inside OR) · display only";
+  if (!orH || !orL) $("holdLine").textContent = "Hold: need OR";
+  else if (!sideNow) $("holdLine").textContent = "Hold: 0 / " + holdNeed + " min (inside) · display only";
   else {
     const label = sideNow === "CALL" ? "above " + Math.round(orH) : "below " + Math.round(orL);
-    $("holdLine").textContent = "Hold: " + heldMin + " / " + holdNeed + " min " + label +
-      (heldMin >= holdNeed ? " · clock OK — flip toggle yourself" : " · display only");
+    $("holdLine").textContent = "Hold: " + heldMin + " / " + holdNeed + " min " + label + (heldMin >= holdNeed ? " · flip toggle yourself" : "");
   }
 
-  ready = false;
-  lastTicket = "";
-  const lock = $("lockBtn");
-  const why = $("lockWhy");
+  ready = false; lastTicket = "";
+  const lock = $("lockBtn"); const why = $("lockWhy");
   lock.style.background = "";
   $("copyBtn").disabled = true;
 
@@ -431,126 +389,126 @@ function paint() {
   if (event) commonSkip.push("event day");
   if (vix != null && vix >= 24) commonSkip.push("VIX ≥ 24");
 
-  if (mode === "straddle") {
-    const x = num("callDebit") || 0;
-    const y = num("putDebit") || 0;
-    const pair = x + y;
-    const tp = +(pair * 1.5).toFixed(2);
-    const st = +(pair * 0.5).toFixed(2);
-    const atm = spot != null ? rnd5(spot) : null;
-    let rp = num("riskStr");
-    if (rp == null || rp > 0.25) rp = 0.25;
-    const per = pair * 100;
-    const qty = per > 0 ? Math.max(1, Math.floor((acct * (rp / 100)) / per)) : 1;
+  // ===== OPEN POP =====
+  if (book === "pop") {
+    const L = popLevels();
+    $("openOut").textContent = L.open != null ? L.open.toFixed(2) : "—";
+    $("openShow").textContent = L.open != null ? Math.round(L.open) : "—";
+    $("buyShow").textContent = L.buy != null ? Math.round(L.buy) : "—";
+    $("sellShow").textContent = L.sell != null ? Math.round(L.sell) : "—";
+    $("popBuyOut").textContent = L.buy != null ? L.buy.toFixed(2) : "—";
+    $("popSellOut").textContent = L.sell != null ? L.sell.toFixed(2) : "—";
+    const buyFilled = $("buyFilled").value === "y";
+    const sellFilled = $("sellFilled").value === "y";
+    const beforeOpen = ptm < 6 * 60 + 30;
+    const pastStop = ptm >= 10 * 60;
+    const name = popMode === "fade" ? "FADE" : "REVERSE";
 
-    $("atmOut").textContent = atm != null ? atm : "—";
-    $("pairOut").textContent = pair ? ("$" + pair.toFixed(2) + " (x " + x.toFixed(2) + " + y " + y.toFixed(2) + ")") : "—";
-    $("tpOut").textContent = pair ? ("$" + tp) : "—";
-    $("stOut").textContent = pair ? ("$" + st) : "—";
-
-    const skip = commonSkip.slice();
-    if (gap != null && Math.abs(gap) >= 1.0) skip.push("gap ≥ 1.0%");
-    if (orPct != null && orPct > 0.40) skip.push("OR too wide >0.40%");
-    if (orW != null && orW > 30) skip.push("OR > 30 pts");
-    if (ptm < 7 * 60) skip.push("before 7:00 AM PT (OR not done)");
-    if (ptm >= 10 * 60) skip.push("after 10:00 AM PT");
-    if (spot == null) skip.push("no spot");
-    if (!x || !y) skip.push("set x and y");
-    if (orH == null || orL == null) skip.push("need OR");
-
-    if (skip.length) {
-      lock.className = "lock off";
-      lock.childNodes[0].textContent = "WAIT";
-      why.textContent = skip[0] + ". No straddle.";
-      $("ticket").textContent = "Gray = no ticket.";
-      return;
+    if (L.open == null) {
+      lock.className = "lock off"; lock.childNodes[0].textContent = "WAIT";
+      why.textContent = "Enter open or refresh after 6:30 AM PT.";
+      $("ticket").textContent = "No levels."; return;
     }
-    ready = true;
-    lock.className = "lock on";
-    lock.style.background = "#059669";
-    lock.childNodes[0].textContent = "ARM STRADDLE";
-    why.textContent =
-      "BTO " + atm + " call @ x=$" + x.toFixed(2) + "\n" +
-      "BTO " + atm + " put @ y=$" + y.toFixed(2) + "\n" +
-      "× " + qty + " each (risk ≤0.25%)\n" +
-      "Exit both @ $" + tp + " = 1.5(x+y)\n" +
-      "Stop @ $" + st + " · flat 10:00 AM PT";
-    lastTicket =
-      "BTO " + qty + " SPX 0DTE " + atm + " CALL  (x ≈ $" + x.toFixed(2) + ")\n" +
-      "BTO " + qty + " SPX 0DTE " + atm + " PUT   (y ≈ $" + y.toFixed(2) + ")\n" +
-      "Pair x+y = $" + pair.toFixed(2) + "\n" +
-      "STC both @ $" + tp + " [1.5(x+y)]\n" +
-      "Stop both @ $" + st + " [0.5(x+y)] · flat 10:00 AM PT";
-    $("ticket").textContent = lastTicket;
-    $("copyBtn").disabled = false;
-    return;
+    if (sellFilled) {
+      lock.className = "lock out"; lock.childNodes[0].textContent = "FLAT — DONE";
+      why.textContent = name + " complete."; $("ticket").textContent = "DONE · " + name; return;
+    }
+    if (buyFilled) {
+      if (pastStop) {
+        lock.className = "lock out"; lock.childNodes[0].textContent = "TIME STOP — SELL NOW";
+        why.textContent = "Past 10:00 AM PT. Flatten market.";
+        lastTicket = "TIME STOP FLATTEN\nSell market\nLong from " + L.buy + " · " + name;
+      } else {
+        lock.className = "lock long"; lock.childNodes[0].textContent = "LONG — SELL " + Math.round(L.sell);
+        why.textContent = name + "\nBuy ~" + Math.round(L.buy) + "\nSell " + Math.round(L.sell) + "\nTime stop 10:00 AM PT";
+        lastTicket = "SELL @ " + L.sell + "\nLong from " + L.buy + "\n" + name + "\nFlat 10:00 AM PT if not filled";
+      }
+      $("ticket").textContent = lastTicket; $("copyBtn").disabled = false; ready = true; return;
+    }
+    if (pastStop) {
+      lock.className = "lock off"; lock.childNodes[0].textContent = "CANCEL — NO FILL";
+      why.textContent = "Buy never filled by 10:00. Cancel.";
+      $("ticket").textContent = "Cancel buy " + L.buy; return;
+    }
+    if (beforeOpen) {
+      lock.className = "lock off"; lock.childNodes[0].textContent = "WAIT — PREOPEN";
+      why.textContent = name + "\nBuy " + Math.round(L.buy) + " · Sell " + Math.round(L.sell);
+    } else {
+      lock.className = "lock arm";
+      lock.childNodes[0].textContent = (popMode === "fade" ? "ARM BUY STOP " : "ARM BUY LIMIT ") + Math.round(L.buy);
+      why.textContent = name + "\nBuy " + Math.round(L.buy) + " → sell " + Math.round(L.sell);
+    }
+    lastTicket = (popMode === "fade" ? "BUY STOP" : "BUY LIMIT") + " · " + name + "\nBuy @ " + L.buy + "\nSell @ " + L.sell + "\nCancel if not filled by 10:00 AM PT";
+    $("ticket").textContent = lastTicket; $("copyBtn").disabled = false; ready = true; return;
   }
 
+  // ===== STRADDLE =====
+  if (book === "straddle") {
+    const x = num("callDebit") || 0, y = num("putDebit") || 0;
+    const pair = x + y, tp = +(pair * 1.5).toFixed(2), st = +(pair * 0.5).toFixed(2);
+    const atm = spot != null ? rnd5(spot) : null;
+    let rp = num("riskPct"); if (rp == null || rp > 0.25) rp = 0.25;
+    const per = pair * 100;
+    const qty = per > 0 ? Math.max(1, Math.floor((acct * (rp / 100)) / per)) : 1;
+    $("atmOut").textContent = atm != null ? atm : "—";
+    $("pairOut").textContent = pair ? ("$" + pair.toFixed(2)) : "—";
+    $("tpOut").textContent = pair ? ("$" + tp) : "—";
+    $("stOut").textContent = pair ? ("$" + st) : "—";
+    const skip = commonSkip.slice();
+    if (gap != null && Math.abs(gap) >= 1.0) skip.push("gap ≥ 1%");
+    if (orPct != null && orPct > 0.40) skip.push("OR too wide");
+    if (orW != null && orW > 30) skip.push("OR > 30 pts");
+    if (ptm < 7 * 60) skip.push("before 7:00 AM PT");
+    if (ptm >= 10 * 60) skip.push("after 10:00 AM PT");
+    if (spot == null || !x || !y || orH == null) skip.push("need spot/OR/x/y");
+    if (skip.length) {
+      lock.className = "lock off"; lock.childNodes[0].textContent = "WAIT";
+      why.textContent = skip[0]; $("ticket").textContent = "No ticket."; return;
+    }
+    ready = true; lock.className = "lock on"; lock.style.background = "#059669";
+    lock.childNodes[0].textContent = "ARM STRADDLE";
+    why.textContent = "BTO " + atm + " call x=$" + x.toFixed(2) + "\nBTO " + atm + " put y=$" + y.toFixed(2) + "\n×" + qty + " · exit $" + tp + " · stop $" + st;
+    lastTicket = "BTO " + qty + " " + atm + " CALL @ $" + x.toFixed(2) + "\nBTO " + qty + " " + atm + " PUT @ $" + y.toFixed(2) + "\nExit $" + tp + " · stop $" + st + " · flat 10:00 AM PT";
+    $("ticket").textContent = lastTicket; $("copyBtn").disabled = false; return;
+  }
+
+  // ===== NAKED =====
   const debit = num("debit") || 0;
   const delta = parseFloat($("delta").value) || 0.30;
-  const above = $("above").value === "y";
-  const below = $("below").value === "y";
-  const whip = $("whip").value === "y";
-  const held = $("held10").value === "y";
+  const above = $("above").value === "y", below = $("below").value === "y";
+  const whip = $("whip").value === "y", held = $("held10").value === "y";
   let rp = num("riskPct") || 0.4;
   if (regime === "positive") rp = rp / 2;
   const per = debit * 100;
   const qty = per > 0 ? Math.max(1, Math.floor((acct * (rp / 100)) / per)) : 1;
-  const tp = +(debit * 2).toFixed(2);
-  const st = +(debit * 0.5).toFixed(2);
-
+  const tp = +(debit * 2).toFixed(2), st = +(debit * 0.5).toFixed(2);
   const skip = commonSkip.slice();
   if (gap != null && Math.abs(gap) >= 0.80) skip.push("gap ≥ 0.80%");
   if (whip || (above && below)) skip.push("whipsaw");
-  if (orH == null || orL == null) skip.push("no OR yet");
+  if (orH == null || orL == null) skip.push("no OR");
   const inWindow = ptm >= 7 * 60 + 15 && ptm < 8 * 60 + 30;
-
   let side = null;
   if (!skip.length && held && above && !below && inWindow) side = "CALL";
   if (!skip.length && held && below && !above && inWindow) side = "PUT";
-
   if (!side) {
-    lock.className = "lock off";
-    lock.childNodes[0].textContent = "WAIT";
+    lock.className = "lock off"; lock.childNodes[0].textContent = "WAIT";
     let r = "No long.";
     if (skip[0]) r = skip[0];
-    else if (!held) r = "Flip hold toggle after " + holdNeed + " min (clock is display only)";
+    else if (!held) r = "Flip hold toggle after " + holdNeed + " min";
     else if (!inWindow) r = "Outside 7:15–8:30 AM PT";
-    else if (!above && !below) r = "No side accepted yet";
-    why.textContent = r;
-    $("ticket").textContent = "Gray = no ticket.";
-    return;
+    else r = "No side accepted";
+    why.textContent = r; $("ticket").textContent = "No ticket."; return;
   }
-
   const pts = otmPts(delta);
   const k = side === "CALL" ? rnd5((spot || orH) + pts) : rnd5((spot || orL) - pts);
-  ready = true;
-  lock.className = "lock on";
+  ready = true; lock.className = "lock on";
   lock.style.background = side === "CALL" ? "#059669" : "#B91C1C";
   lock.childNodes[0].textContent = side === "CALL" ? "PLACE CALL" : "PLACE PUT";
-  const nl = nearestLevels(spot);
-  const conf = side === "CALL"
-    ? (nl.above ? ("Next watch " + nl.above.label) : "No watch above")
-    : (nl.below ? ("Next watch " + nl.below.label) : "No watch below");
-  why.textContent =
-    "BUY " + k + " " + side + "\n" +
-    "Debit ~$" + debit.toFixed(2) + " × " + qty +
-    (regime === "positive" ? " (half size +GEX)" : "") + "\n" +
-    "Target $" + tp + " (2×) · Stop $" + st + " (0.5×)\n" +
-    conf + " · Flat 11:45 AM PT";
-  lastTicket =
-    "BUY " + qty + " SPX 0DTE " + k + " " + side + " @ ~$" + debit.toFixed(2) + "\n" +
-    "TARGET sell ALL @ $" + tp + " (+100%)\n" +
-    "STOP sell ALL @ $" + st + " (−50%) or lose the OR\n" +
-    "Flatten 11:45 AM PT";
-  $("ticket").textContent = lastTicket;
-  $("copyBtn").disabled = false;
+  why.textContent = "BUY " + k + " " + side + "\n$" + debit.toFixed(2) + " × " + qty + (regime === "positive" ? " (half +GEX)" : "") + "\nTP $" + tp + " · SL $" + st;
+  lastTicket = "BUY " + qty + " SPX 0DTE " + k + " " + side + " @ ~$" + debit.toFixed(2) + "\nTARGET $" + tp + "\nSTOP $" + st + "\nFlat 11:45 AM PT";
+  $("ticket").textContent = lastTicket; $("copyBtn").disabled = false;
 }
 
-function onLockTap() {
-  if (!ready) return;
-  copyTicket();
-}
 function copyTicket() {
   if (!lastTicket) return;
   navigator.clipboard.writeText(lastTicket).then(() => alert(lastTicket + "\n\nCopied.")).catch(() => alert(lastTicket));
@@ -562,144 +520,71 @@ async function proxyFetch(url) {
   return r;
 }
 
-async function autoRefresh() {
-  $("refBtn").disabled = true;
-  $("meta").textContent = "Refreshing…";
-  $("connBox").textContent = "Checking GEX + Yahoo…";
-  let gexLine = "GEX: fail";
-  let yhooLine = "Yahoo: fail";
-  const bits = [];
+async function autoRefresh(manual) {
+  if (refreshing) return;
+  refreshing = true;
+  if (manual) $("meta").textContent = "Refreshing…";
+  let gexLine = "GEX: —", yLine = "Yahoo: —";
   try {
     const g = await proxyFetch(GEX);
     const j = await g.json();
     if (j.spot) $("spot").value = (+j.spot).toFixed(2);
-    const date = j.date || j.as_of || "?";
     const net = j.net_gex_dollars != null ? j.net_gex_dollars : j.net_gex;
-    let netTxt = "";
     if (net != null) {
       const b = (+net) / 1e9;
-      netTxt = " · " + (b >= 0 ? "+" : "") + b.toFixed(1) + "B";
+      gexLine = "GEX ok · " + (j.date || "?") + " · " + (b >= 0 ? "+" : "") + b.toFixed(1) + "B";
       $("regime").value = b >= 0 ? "positive" : "negative";
-    }
-    const flip = j.zero_gamma_flip != null ? Math.round(+j.zero_gamma_flip) : (j.flip != null ? Math.round(+j.flip) : null);
-    gexLine = "GEX ok · " + date + netTxt + (flip != null ? " · flip " + flip : "");
-    bits.push("GEX ok");
-  } catch (e) {
-    gexLine = "GEX fail — Worker or feed blocked";
-    bits.push("GEX fail");
-  }
+    } else gexLine = "GEX ok";
+  } catch (e) { gexLine = "GEX fail"; }
   try {
     const y = await proxyFetch("https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1m&range=1d");
     const j = await y.json();
     const r = j.chart.result[0];
-    const meta = r.meta;
-    const q = r.indicators.quote[0];
-    if (meta.regularMarketPrice) $("spot").value = meta.regularMarketPrice.toFixed(2);
+    const meta = r.meta; const q = r.indicators.quote[0]; const ts = r.timestamp || [];
+    if (meta.regularMarketPrice != null) {
+      $("spot").value = (+meta.regularMarketPrice).toFixed(2);
+      $("livePx").textContent = "SPX " + (+meta.regularMarketPrice).toFixed(2);
+    }
     if (meta.previousClose) $("prior").value = meta.previousClose.toFixed(2);
-    const ts = r.timestamp || [];
-    let orH = null, orL = null;
+    let openPx = null, orH = null, orL = null;
     for (let i = 0; i < ts.length; i++) {
       const d = new Date(ts[i] * 1000);
       const et = new Date(d.toLocaleString("en-US", { timeZone: "America/New_York" }));
       const m = et.getHours() * 60 + et.getMinutes();
+      if (m >= 9 * 60 + 30 && m < 9 * 60 + 40 && q.open[i] != null && openPx == null) openPx = q.open[i];
       if (m >= 9 * 60 + 30 && m < 10 * 60) {
         if (q.high[i] != null) orH = orH == null ? q.high[i] : Math.max(orH, q.high[i]);
         if (q.low[i] != null) orL = orL == null ? q.low[i] : Math.min(orL, q.low[i]);
       }
     }
+    if (openPx != null && (num("openPx") == null || manual)) $("openPx").value = (+openPx).toFixed(2);
     if (orH != null) $("orH").value = orH.toFixed(2);
     if (orL != null) $("orL").value = orL.toFixed(2);
-    const sp = meta.regularMarketPrice != null ? (+meta.regularMarketPrice).toFixed(2) : "—";
-    const orTxt = (orH != null && orL != null) ? (" · OR " + Math.round(orH) + "/" + Math.round(orL)) : " · OR not ready";
-    yhooLine = "Yahoo ok · SPX " + sp + orTxt;
-    bits.push("Yahoo ok");
-  } catch (e) {
-    yhooLine = "Yahoo fail — type Spot / OR";
-    bits.push("Yahoo fail");
-  }
+    yLine = "Yahoo ok · SPX " + (meta.regularMarketPrice != null ? (+meta.regularMarketPrice).toFixed(2) : "—");
+    if (orH != null) yLine += " · OR " + Math.round(orH) + "/" + Math.round(orL);
+  } catch (e) { yLine = "Yahoo fail — type Spot"; }
   try {
     const v = await proxyFetch("https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=5d");
-    const j = await v.json();
-    const px = j.chart.result[0].meta.regularMarketPrice;
-    if (px) {
-      $("vix").value = px.toFixed(2);
-      yhooLine += " · VIX " + (+px).toFixed(2);
-    }
+    const px = (await v.json()).chart.result[0].meta.regularMarketPrice;
+    if (px) { $("vix").value = (+px).toFixed(2); yLine += " · VIX " + (+px).toFixed(2); }
   } catch (e) {}
-  $("connBox").innerHTML = gexLine + "<br>" + yhooLine;
-  const spxNow = num("spot");
-  const ts = stamp();
-  $("meta").textContent = ts + " PT · " + bits.join(" · ");
-  $("refBtn").disabled = false;
-  $("refBtn").textContent = spxNow != null
-    ? ("MANUAL REFRESH (SPX " + Math.round(spxNow) + " · " + ts + ")")
-    : ("MANUAL REFRESH (" + ts + ")");
+  const t = ptNow(true);
+  $("liveTs").textContent = "as of " + t + " PT";
+  $("connBox").innerHTML = gexLine + "<br>" + yLine;
+  $("meta").textContent = "Last " + t + " PT · auto 15s";
+  $("refBtn").textContent = "REFRESH PRICE (" + (num("spot") != null ? Math.round(num("spot")) : "—") + " · " + ptNow(false) + ")";
+  refreshing = false;
   paint();
 }
 
-function loadDays() {
-  return JSON.parse(localStorage.getItem("spxdesk_log") || "[]");
-}
-function saveDay() {
-  const rec = {
-    t: Date.now(),
-    date: $("resDate").value || new Date().toISOString().slice(0, 10),
-    book: $("resBook").value,
-    out: $("resOut").value,
-    pnl: $("resPnl").value,
-    note: $("resNote").value
-  };
-  const days = loadDays().filter(d => !(d.date === rec.date && d.book === rec.book));
-  days.unshift(rec);
-  localStorage.setItem("spxdesk_log", JSON.stringify(days.slice(0, 60)));
-  $("resNote").value = "";
-  $("resPnl").value = "";
-  showLogs();
-}
-function showLogs() {
-  const days = loadDays();
-  const trades = days.filter(d => d.book !== "WAIT");
-  const wins = trades.filter(d => d.out === "tp").length;
-  const pnl = days.reduce((s, d) => s + (parseFloat(d.pnl) || 0), 0);
-  $("resStats").innerHTML = days.length
-    ? "<b>" + days.length + " days</b> · trades " + trades.length + " · targets " + wins + " · P&L $" + pnl.toFixed(0)
-    : "No results yet.";
-  $("logs").innerHTML = days.slice(0, 15).map(d =>
-    "<div class='plan' style='margin-top:4px'><pre style='margin:0;white-space:pre-wrap'>" +
-    d.date + " · " + d.book + " · " + d.out + " · " + (d.pnl || "—") + "\n" + (d.note || "") +
-    "</pre></div>"
-  ).join("");
-}
+["spot","prior","openPx","orH","orL","vix","event","regime","account","riskPct","debit","delta","callDebit","putDebit","above","below","whip","held10","entryPts","targetPts","buyFilled","sellFilled"]
+  .forEach(id => { const el = $(id); if (!el) return; el.addEventListener("input", paint); el.addEventListener("change", paint); });
 
-["spot","prior","orH","orL","vix","event","regime","account","riskPct","riskStr","debit","delta","callDebit","putDebit","above","below","whip","held10"]
-  .forEach(id => {
-    const el = $(id);
-    if (!el) return;
-    el.addEventListener("input", paint);
-    el.addEventListener("change", paint);
-  });
-try { $("resDate").value = new Date().toISOString().slice(0, 10); } catch (e) {}
-const wl = $("watchline");
-if (wl) {
-  wl.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      parseWatchline(wl.value);
-    }
-  });
-  wl.addEventListener("change", () => parseWatchline(wl.value));
-  try {
-    const saved = JSON.parse(localStorage.getItem("spxdesk_watch") || "null");
-    if (saved && saved.raw) {
-      wl.value = saved.raw;
-      watchLevels = saved.levels || [];
-      paintLevels();
-    }
-  } catch (e) {}
-}
-setMode("naked");
-showLogs();
-setInterval(() => { if (holdStartMs && mode === "naked") paint(); }, 15000);
+setBook("naked");
+autoRefresh(true);
+setInterval(() => autoRefresh(false), 15000);
+setInterval(() => { if (holdStartMs && book === "naked") paint(); }, 15000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) autoRefresh(false); });
 </script>
 </body>
 </html>
