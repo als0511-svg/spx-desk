@@ -85,6 +85,15 @@
     .kv:last-child { border-bottom:0; }
     .hidden { display:none !important; }
     .hold { text-align:center; font-weight:800; font-size:13px; margin:0 0 5px; padding:8px; background:#120C1A; border-radius:10px; }
+    .decision {
+      text-align:center; font-weight:900; font-size:22px; margin:0 0 6px; padding:14px 10px;
+      border-radius:14px; letter-spacing:.04em; line-height:1.2;
+    }
+    .decision .reason { display:block; margin-top:6px; font-size:12px; font-weight:700; letter-spacing:0; opacity:.95; white-space:pre-line; }
+    .decision.enter { background:#059669; color:#fff; }
+    .decision.wait { background:#4B5563; color:#E5E7EB; }
+    .decision.skip { background:#B91C1C; color:#fff; }
+    .decision.exit { background:#DC2626; color:#fff; box-shadow:0 0 0 2px #FCA5A5; }
   </style>
 </head>
 <body>
@@ -92,9 +101,9 @@
   <p class="sub">Naked · Straddle · Open Pop. All clocks <b>PT</b>.</p>
 
   <div class="seg">
-    <button type="button" id="tabNaked" class="on" onclick="setBook('naked')">NAKED</button>
+    <button type="button" id="tabPop" class="on" onclick="setBook('pop')">OPEN POP</button>
     <button type="button" id="tabStraddle" onclick="setBook('straddle')">STRADDLE</button>
-    <button type="button" id="tabPop" onclick="setBook('pop')">OPEN POP</button>
+    <button type="button" id="tabNaked" onclick="setBook('naked')">NAKED</button>
   </div>
 
   <div class="pricebar">
@@ -132,6 +141,7 @@
     <div class="lvl buy"><div class="k" id="buyLbl">Buy</div><div class="v" id="buyShow">—</div></div>
     <div class="lvl sell"><div class="k">Sell</div><div class="v" id="sellShow">—</div></div>
   </div>
+  <div class="decision wait hidden" id="decisionBox">WAIT<span class="reason" id="decisionWhy">Checking rules…</span></div>
 
   <button type="button" class="lock off" id="lockBtn">WAIT<span class="tiny" id="lockWhy">Conditions not met.</span></button>
   <button class="btn ghost" type="button" id="copyBtn" disabled onclick="copyTicket()">Copy ticket</button>
@@ -241,10 +251,11 @@
     </div>
     <div id="playPop" class="hidden">
       <ol class="steps">
-        <li><b>FADE:</b> buy stop open+10 → sell open−10.</li>
-        <li><b>REVERSE:</b> buy limit open−10 → sell open+10.</li>
-        <li>Cancel if not filled by 10:00 AM PT · time stop if still long.</li>
-        <li>One side only per morning.</li>
+        <li><b>FADE:</b> buy stop open+10 → sell open−10. <b>REVERSE:</b> buy open−10 → sell open+10.</li>
+        <li><b>SKIP FADE</b> if gap up ≥ 0.50% or spot ≥ open+15 (trend).</li>
+        <li><b>SKIP REVERSE</b> if gap down ≤ −0.50% or spot ≤ open−15.</li>
+        <li><b>EXIT</b> if open±15, or buy±8 against you, or still wrong side after 7:00 AM PT — do not wait for 10:00.</li>
+        <li>No fill by 10:00 AM PT → cancel. Still long at 10:00 → flatten.</li>
       </ol>
     </div>
   </section>
@@ -259,7 +270,7 @@ const num = id => { const v = parseFloat($(id).value); return Number.isFinite(v)
 const rnd5 = x => Math.round(x / 5) * 5;
 const rnd1 = x => Math.round(x * 100) / 100;
 
-let book = "naked";
+let book = "pop";
 let popMode = "fade";
 let ready = false;
 let lastTicket = "";
@@ -290,6 +301,7 @@ function setBook(b) {
   $("holdLine").classList.toggle("hidden", b !== "naked");
   $("popSeg").classList.toggle("hidden", b !== "pop");
   $("popLevels").classList.toggle("hidden", b !== "pop");
+  $("decisionBox").classList.toggle("hidden", b !== "pop");
   $("playNaked").classList.toggle("hidden", b !== "naked");
   $("playStraddle").classList.toggle("hidden", b !== "straddle");
   $("playPop").classList.toggle("hidden", b !== "pop");
@@ -403,42 +415,132 @@ function paint() {
     const beforeOpen = ptm < 6 * 60 + 30;
     const pastStop = ptm >= 10 * 60;
     const name = popMode === "fade" ? "FADE" : "REVERSE";
+    const gapAbs = gap != null ? Math.abs(gap) : null;
+    // invalidation: open+15 for fade trend, open-15 for reverse trend
+    const invFade = L.open != null ? L.open + 15 : null;
+    const invRev = L.open != null ? L.open - 15 : null;
+
+    const dec = $("decisionBox");
+    const decWhy = $("decisionWhy");
+    function setDec(kind, title, reason) {
+      dec.className = "decision " + kind;
+      dec.childNodes[0].textContent = title;
+      decWhy.textContent = reason;
+    }
 
     if (L.open == null) {
       lock.className = "lock off"; lock.childNodes[0].textContent = "WAIT";
       why.textContent = "Enter open or refresh after 6:30 AM PT.";
+      setDec("wait", "WAIT", "Need cash open.");
       $("ticket").textContent = "No levels."; return;
     }
+
+    // --- SKIP filters (bake-in) ---
+    const skipReasons = [];
+    if (event) skipReasons.push("event day");
+    if (vix != null && vix >= 24) skipReasons.push("VIX ≥ 24");
+    if (popMode === "fade") {
+      if (gap != null && gap >= 0.50) skipReasons.push("gap up " + gap.toFixed(2) + "% ≥ 0.50% — trend risk");
+      // early acceptance: still extended by 6:50 or any time before 7:00 if >= open+15
+      if (spot != null && invFade != null && spot >= invFade && ptm >= 6 * 60 + 30 && ptm < 10 * 60) {
+        if (ptm >= 6 * 60 + 50) skipReasons.push("spot ≥ open+15 by/after 6:50 — trend accepted");
+        else if (ptm >= 6 * 60 + 30) skipReasons.push("spot already ≥ open+15 — no fade");
+      }
+    }
+    if (popMode === "reverse") {
+      if (gap != null && gap <= -0.50) skipReasons.push("gap down " + gap.toFixed(2) + "% ≤ −0.50% — trend risk");
+      if (spot != null && invRev != null && spot <= invRev && ptm >= 6 * 60 + 30 && ptm < 10 * 60) {
+        if (ptm >= 6 * 60 + 50) skipReasons.push("spot ≤ open−15 by/after 6:50 — trend accepted");
+        else if (ptm >= 6 * 60 + 30) skipReasons.push("spot already ≤ open−15 — no reverse");
+      }
+    }
+
+    // soft warn half-size zone 0.30-0.50 gap (still allow but decision says WAIT caution)
+    let caution = null;
+    if (popMode === "fade" && gap != null && gap >= 0.30 && gap < 0.50) caution = "gap up " + gap.toFixed(2) + "% — half size only if you arm";
+    if (popMode === "reverse" && gap != null && gap <= -0.30 && gap > -0.50) caution = "gap down " + Math.abs(gap).toFixed(2) + "% — half size only if you arm";
+
     if (sellFilled) {
       lock.className = "lock out"; lock.childNodes[0].textContent = "FLAT — DONE";
-      why.textContent = name + " complete."; $("ticket").textContent = "DONE · " + name; return;
+      why.textContent = name + " complete.";
+      setDec("enter", "DONE", "Sell filled · session complete");
+      $("ticket").textContent = "DONE · " + name; return;
     }
+
     if (buyFilled) {
+      // EXIT rules — do NOT wait until 10:00 if trade is going against you
+      const exitReasons = [];
+      if (popMode === "fade" && spot != null) {
+        if (invFade != null && spot >= invFade)
+          exitReasons.push("spot ≥ open+15 (" + Math.round(invFade) + ") — trend accepted");
+        if (L.buy != null && spot >= L.buy + 8)
+          exitReasons.push("spot ≥ buy+8 (" + Math.round(L.buy + 8) + ") — adverse extension");
+        // 7:00 AM PT still extended and not working toward sell
+        if (ptm >= 7 * 60 && L.sell != null && spot > L.buy)
+          exitReasons.push("after 7:00 AM PT still above buy — not mean-reverting");
+      }
+      if (popMode === "reverse" && spot != null) {
+        if (invRev != null && spot <= invRev)
+          exitReasons.push("spot ≤ open−15 (" + Math.round(invRev) + ") — trend accepted");
+        if (L.buy != null && spot <= L.buy - 8)
+          exitReasons.push("spot ≤ buy−8 (" + Math.round(L.buy - 8) + ") — adverse extension");
+        if (ptm >= 7 * 60 && L.sell != null && spot < L.buy)
+          exitReasons.push("after 7:00 AM PT still below buy — not mean-reverting");
+      }
+      if (exitReasons.length) {
+        lock.className = "lock out";
+        lock.childNodes[0].textContent = "EXIT NOW";
+        why.textContent = exitReasons[0] + "\nFlatten now — do not wait for 10:00.";
+        setDec("exit", "EXIT", exitReasons.join("\n") + "\nFlatten immediately");
+        lastTicket = "EXIT NOW · " + name + "\n" + exitReasons[0] + "\nFlatten at market — do not hold to 10:00 AM PT";
+        $("ticket").textContent = lastTicket; $("copyBtn").disabled = false; ready = true; return;
+      }
       if (pastStop) {
         lock.className = "lock out"; lock.childNodes[0].textContent = "TIME STOP — SELL NOW";
         why.textContent = "Past 10:00 AM PT. Flatten market.";
+        setDec("exit", "EXIT", "Time stop 10:00 AM PT · flatten market");
         lastTicket = "TIME STOP FLATTEN\nSell market\nLong from " + L.buy + " · " + name;
       } else {
         lock.className = "lock long"; lock.childNodes[0].textContent = "LONG — SELL " + Math.round(L.sell);
-        why.textContent = name + "\nBuy ~" + Math.round(L.buy) + "\nSell " + Math.round(L.sell) + "\nTime stop 10:00 AM PT";
-        lastTicket = "SELL @ " + L.sell + "\nLong from " + L.buy + "\n" + name + "\nFlat 10:00 AM PT if not filled";
+        why.textContent = name + "\nBuy ~" + Math.round(L.buy) + "\nSell " + Math.round(L.sell) + "\nEXIT if open±15 or buy±8 against you";
+        setDec("enter", "HOLD", "Target " + Math.round(L.sell) + "\nEXIT if invalidation — do not wait for 10:00");
+        lastTicket = "SELL @ " + L.sell + "\nLong from " + L.buy + "\n" + name + "\nEXIT if spot hits invalidation\nElse flat 10:00 AM PT";
       }
       $("ticket").textContent = lastTicket; $("copyBtn").disabled = false; ready = true; return;
     }
+
+    if (skipReasons.length) {
+      lock.className = "lock off"; lock.childNodes[0].textContent = "SKIP " + name;
+      why.textContent = skipReasons[0];
+      setDec("skip", "SKIP", skipReasons.join("\n"));
+      $("ticket").textContent = "SKIP " + name + " — " + skipReasons[0];
+      return;
+    }
+
     if (pastStop) {
       lock.className = "lock off"; lock.childNodes[0].textContent = "CANCEL — NO FILL";
       why.textContent = "Buy never filled by 10:00. Cancel.";
+      setDec("skip", "SKIP", "Window closed · no fill by 10:00 AM PT");
       $("ticket").textContent = "Cancel buy " + L.buy; return;
     }
+
     if (beforeOpen) {
       lock.className = "lock off"; lock.childNodes[0].textContent = "WAIT — PREOPEN";
       why.textContent = name + "\nBuy " + Math.round(L.buy) + " · Sell " + Math.round(L.sell);
-    } else {
-      lock.className = "lock arm";
-      lock.childNodes[0].textContent = (popMode === "fade" ? "ARM BUY STOP " : "ARM BUY LIMIT ") + Math.round(L.buy);
-      why.textContent = name + "\nBuy " + Math.round(L.buy) + " → sell " + Math.round(L.sell);
+      let pre = "Arms at 6:30 AM PT\nBuy " + Math.round(L.buy) + " → sell " + Math.round(L.sell);
+      if (gap != null && ((popMode === "fade" && gap >= 0.50) || (popMode === "reverse" && gap <= -0.50)))
+        pre = "Likely SKIP after open — gap " + gap.toFixed(2) + "%";
+      setDec("wait", "WAIT", pre);
+      lastTicket = "PREOPEN · " + name + "\nOpen " + L.open + "\nBuy @ " + L.buy + "\nSell @ " + L.sell;
+      $("ticket").textContent = lastTicket; $("copyBtn").disabled = false; ready = true; return;
     }
-    lastTicket = (popMode === "fade" ? "BUY STOP" : "BUY LIMIT") + " · " + name + "\nBuy @ " + L.buy + "\nSell @ " + L.sell + "\nCancel if not filled by 10:00 AM PT";
+
+    // Armed — ENTER
+    lock.className = "lock arm";
+    lock.childNodes[0].textContent = (popMode === "fade" ? "ARM BUY STOP " : "ARM BUY LIMIT ") + Math.round(L.buy);
+    why.textContent = name + "\nBuy " + Math.round(L.buy) + " → sell " + Math.round(L.sell) + (caution ? "\n" + caution : "");
+    setDec("enter", "ENTER", name + " armed\nBuy " + Math.round(L.buy) + " → sell " + Math.round(L.sell) + (caution ? "\n" + caution : "") + "\nSkip if extends to open±15");
+    lastTicket = (popMode === "fade" ? "BUY STOP" : "BUY LIMIT") + " · " + name + "\nBuy @ " + L.buy + "\nSell @ " + L.sell + "\nInvalidate @ " + (popMode === "fade" ? (L.open + 15) : (L.open - 15)) + "\nCancel if not filled by 10:00 AM PT";
     $("ticket").textContent = lastTicket; $("copyBtn").disabled = false; ready = true; return;
   }
 
@@ -580,7 +682,7 @@ async function autoRefresh(manual) {
 ["spot","prior","openPx","orH","orL","vix","event","regime","account","riskPct","debit","delta","callDebit","putDebit","above","below","whip","held10","entryPts","targetPts","buyFilled","sellFilled"]
   .forEach(id => { const el = $(id); if (!el) return; el.addEventListener("input", paint); el.addEventListener("change", paint); });
 
-setBook("naked");
+setBook("pop");
 autoRefresh(true);
 setInterval(() => autoRefresh(false), 15000);
 setInterval(() => { if (holdStartMs && book === "naked") paint(); }, 15000);
